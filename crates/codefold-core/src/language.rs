@@ -7,6 +7,7 @@ use crate::Error;
 pub enum Language {
     Python,
     TypeScript,
+    Rust,
 }
 
 impl Language {
@@ -14,6 +15,7 @@ impl Language {
         match self {
             Language::Python => "python",
             Language::TypeScript => "typescript",
+            Language::Rust => "rust",
         }
     }
 
@@ -22,6 +24,7 @@ impl Language {
         match ext {
             "py" | "pyi" => Ok(Language::Python),
             "ts" => Ok(Language::TypeScript),
+            "rs" => Ok(Language::Rust),
             other => Err(Error::UnsupportedLanguage(other.to_string())),
         }
     }

@@ -229,7 +229,7 @@ checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
 
 [[package]]
 name = "codefold-cli"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "assert_cmd",
  "clap",
@@ -239,7 +239,7 @@ dependencies = [
 
 [[package]]
 name = "codefold-core"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "criterion",
  "insta",
@@ -248,6 +248,7 @@ dependencies = [
  "tiktoken-rs",
  "tree-sitter",
  "tree-sitter-python",
+ "tree-sitter-rust",
  "tree-sitter-typescript",
 ]
 
@@ -1024,6 +1025,16 @@ name = "tree-sitter-python"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4066c6cf678f962f8c2c4561f205945c84834cce73d981e71392624fdc390a9"
+dependencies = [
+ "cc",
+ "tree-sitter",
+]
+
+[[package]]
+name = "tree-sitter-rust"
+version = "0.21.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "277690f420bf90741dea984f3da038ace46c4fe6047cba57a66822226cde1c93"
 dependencies = [
  "cc",
  "tree-sitter",

@@ -4,7 +4,7 @@
 
 A structural code reader for LLM agents. Hand it a file and a zoom level — it gives you back the slice of the file the model actually needs to see.
 
-Supported today: **Python**, **TypeScript**. Rust core, optional CLI, Python and Node bindings on the roadmap.
+Supported today: **Python**, **TypeScript**, **Rust**. Rust core, optional CLI, Python and Node bindings on the roadmap.
 
 ## Why
 
@@ -75,10 +75,11 @@ If you're building an agent framework or a code-aware tool and you need granular
 
 ## Status
 
-Early. v0.2.0. Python and TypeScript work. API is not yet stable.
+Early. v0.3.0. Python, TypeScript, Rust. API is not yet stable.
 
 ### Changelog
 
+- **0.3.0** — Rust language support (`.rs`). `pub` filter at Public level; trait-impl methods kept regardless of `pub`. GitHub Actions CI on Linux/macOS/Windows.
 - **0.2.0** — `Public` level (Python `_`-prefix filter, TypeScript `export`/`private` filter). `Level` enum marked `#[non_exhaustive]`.
 - **0.1.0** — Initial release. Python and TypeScript, `Full` / `Signatures` / `Bodies` levels, `focus=[...]`, token estimation, CLI, criterion benchmarks.
 

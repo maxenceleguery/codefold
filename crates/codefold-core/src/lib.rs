@@ -9,6 +9,7 @@ mod options;
 mod parse;
 mod python;
 mod result;
+mod rust;
 mod tokens;
 mod typescript;
 
@@ -56,6 +57,10 @@ pub fn read_opts(path: &Path, opts: Options) -> Result<FoldResult> {
         }
         Language::TypeScript => {
             let out = typescript::render(&source, &tree, opts.level, &opts.focus);
+            (out.content, out.symbols, out.hidden_ranges)
+        }
+        Language::Rust => {
+            let out = rust::render(&source, &tree, opts.level, &opts.focus);
             (out.content, out.symbols, out.hidden_ranges)
         }
     };
