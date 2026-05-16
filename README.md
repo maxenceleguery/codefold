@@ -154,6 +154,10 @@ Early. v0.8.1. Python, TypeScript, Rust, Go. API is not yet stable.
 - **0.2.0** — `Public` level (Python `_`-prefix filter, TypeScript `export`/`private` filter). `Level` enum marked `#[non_exhaustive]`.
 - **0.1.0** — Initial release. Python and TypeScript, `Full` / `Signatures` / `Bodies` levels, `focus=[...]`, token estimation, CLI, criterion benchmarks.
 
+## Contributing
+
+Branch off `develop`, open a PR against `develop`. Releases are tagged on `main`. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## License
 
 [MIT](LICENSE)
