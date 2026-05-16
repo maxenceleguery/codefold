@@ -1,0 +1,17 @@
+[package]
+name = "codefold-core"
+description = "Structural code reader for LLM agents — Read, with zoom levels"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+tree-sitter = { workspace = true }
+tree-sitter-python = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+insta = { workspace = true }
