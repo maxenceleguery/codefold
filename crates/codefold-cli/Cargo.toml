@@ -21,7 +21,12 @@ path = "src/main.rs"
 # crates.io strips it and uses the version. Keep these in sync with workspace.package.version.
 codefold-core = { path = "../codefold-core", version = "0.7.0" }
 clap = { workspace = true }
+ureq = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+dirs = { workspace = true }
 
 [dev-dependencies]
 assert_cmd = { workspace = true }
 predicates = { workspace = true }
+tempfile = { workspace = true }

@@ -64,6 +64,26 @@ codefold src/auth.py --level bodies --focus login,verify_token
 codefold src/handlers.ts --level signatures --stats
 ```
 
+### Subcommands
+
+```sh
+codefold update                  # check GitHub for a newer release
+codefold setup                   # install integration into agent harnesses (project scope)
+codefold setup --scope user      # install user-level (~/.claude/CLAUDE.md + skill)
+codefold setup --dry-run         # show what would change without writing
+codefold setup -H claude-code    # target a specific harness (claude-code|cursor|copilot)
+```
+
+`codefold setup` writes a delimited `<!-- codefold:start --> ... <!-- codefold:end -->` block to:
+
+| Harness        | Project scope                          | User scope                                                  |
+|----------------|----------------------------------------|-------------------------------------------------------------|
+| Claude Code    | `./CLAUDE.md`                          | `~/.claude/CLAUDE.md` + `~/.claude/skills/codefold/SKILL.md`|
+| Cursor         | `.cursor/rules/codefold.mdc`           | (n/a)                                                       |
+| Copilot        | `.github/copilot-instructions.md`      | (n/a)                                                       |
+
+The block is idempotent — re-running `setup` updates in place. It explicitly tells the agent to **brief any subagents** it spawns about codefold, since subagents don't inherit conversation context.
+
 As a Rust library:
 
 ```rust
