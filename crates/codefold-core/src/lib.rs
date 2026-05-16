@@ -47,7 +47,16 @@ pub fn read(path: &Path, level: Level) -> Result<FoldResult> {
             })
         }
         (Language::Python, Level::Bodies) => {
-            unimplemented!("Bodies level not yet implemented")
+            let tree = parse::parse(language, &source).map_err(|_| Error::Parse {
+                path: path.into(),
+            })?;
+            let out = python::render_bodies(&source, &tree);
+            Ok(FoldResult {
+                content: out.content,
+                symbols: out.symbols,
+                hidden_ranges: out.hidden_ranges,
+                language: language.name().to_string(),
+            })
         }
     }
 }

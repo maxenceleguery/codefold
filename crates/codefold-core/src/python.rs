@@ -3,13 +3,29 @@ use tree_sitter::Node;
 use crate::result::{Symbol, SymbolKind};
 
 pub fn render_signatures(source: &str, tree: &tree_sitter::Tree) -> RenderOutput {
-    let mut r = Renderer::new(source);
+    let mut r = Renderer::new(source, Mode::Signatures);
     r.render_module(tree.root_node());
     RenderOutput {
         content: r.out,
         symbols: r.symbols,
         hidden_ranges: r.hidden,
     }
+}
+
+pub fn render_bodies(source: &str, tree: &tree_sitter::Tree) -> RenderOutput {
+    let mut r = Renderer::new(source, Mode::Bodies);
+    r.render_module(tree.root_node());
+    RenderOutput {
+        content: r.out,
+        symbols: r.symbols,
+        hidden_ranges: r.hidden,
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Mode {
+    Signatures,
+    Bodies,
 }
 
 pub struct RenderOutput {
@@ -20,15 +36,17 @@ pub struct RenderOutput {
 
 struct Renderer<'a> {
     source: &'a str,
+    mode: Mode,
     out: String,
     symbols: Vec<Symbol>,
     hidden: Vec<(usize, usize)>,
 }
 
 impl<'a> Renderer<'a> {
-    fn new(source: &'a str) -> Self {
+    fn new(source: &'a str, mode: Mode) -> Self {
         Self {
             source,
+            mode,
             out: String::new(),
             symbols: Vec::new(),
             hidden: Vec::new(),
@@ -148,6 +166,11 @@ impl<'a> Renderer<'a> {
         // Emit everything before the body verbatim (decorators, def line, params, return type, colon).
         self.emit_slice(node.start_byte(), body.start_byte());
 
+        if self.mode == Mode::Bodies {
+            self.emit_body_with_nested_collapsed(body);
+            return;
+        }
+
         let body_indent = indent_of_first_line(self.source, &body);
         let pad = " ".repeat(body_indent);
 
@@ -166,6 +189,28 @@ impl<'a> Renderer<'a> {
             self.out.push_str("...");
             self.hide(body.start_byte(), body.end_byte());
         }
+    }
+
+    /// Emit a function body verbatim from source, but for any function defined
+    /// *inside* the body, collapse its body to `<indent>...`.
+    fn emit_body_with_nested_collapsed(&mut self, body: Node<'a>) {
+        let mut nested: Vec<Node<'a>> = Vec::new();
+        collect_outermost_nested_fn_bodies(body, &mut nested);
+        nested.sort_by_key(|n| n.start_byte());
+
+        let mut cur = body.start_byte();
+        for inner_body in nested {
+            // Emit source up to the start of the inner body (so the inner def's signature is kept).
+            self.emit_slice(cur, inner_body.start_byte());
+            // Collapse the inner body.
+            let indent = indent_of_first_line(self.source, &inner_body);
+            self.out.push('\n');
+            self.out.push_str(&" ".repeat(indent));
+            self.out.push_str("...");
+            self.hide(inner_body.start_byte(), inner_body.end_byte());
+            cur = inner_body.end_byte();
+        }
+        self.emit_slice(cur, body.end_byte());
     }
 
     fn emit_docstring_summary(&mut self, ds: &Node<'a>) {
@@ -251,6 +296,40 @@ impl<'a> Renderer<'a> {
             self.out.push('\n');
             self.out.push_str(&pad);
             self.out.push_str("...");
+        }
+    }
+}
+
+/// Walk `node`'s descendants and collect the `body` field of every
+/// `function_definition` found, but do not recurse into a function once it's
+/// added (its inner defs are already inside the collapsed range).
+fn collect_outermost_nested_fn_bodies<'a>(node: Node<'a>, out: &mut Vec<Node<'a>>) {
+    let mut cursor = node.walk();
+    for child in node.children(&mut cursor) {
+        match child.kind() {
+            "function_definition" => {
+                if let Some(body) = child.child_by_field_name("body") {
+                    out.push(body);
+                }
+                // Do not recurse — body is fully collapsed.
+            }
+            "decorated_definition" => {
+                let mut found = false;
+                let mut c = child.walk();
+                for grand in child.children(&mut c) {
+                    if grand.kind() == "function_definition" {
+                        if let Some(body) = grand.child_by_field_name("body") {
+                            out.push(body);
+                        }
+                        found = true;
+                        break;
+                    }
+                }
+                if !found {
+                    collect_outermost_nested_fn_bodies(child, out);
+                }
+            }
+            _ => collect_outermost_nested_fn_bodies(child, out),
         }
     }
 }
