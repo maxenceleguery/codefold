@@ -28,4 +28,7 @@ pub struct FoldResult {
     pub hidden_ranges: Vec<(usize, usize)>,
     /// Detected language (`"python"`, `"typescript"`, ...).
     pub language: String,
+    /// Estimated token count for `content`. Uses cl100k_base (GPT-4 tokenizer)
+    /// as a proxy for Anthropic/OpenAI models — accurate to within ~15%.
+    pub tokens_est: usize,
 }

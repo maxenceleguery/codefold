@@ -9,6 +9,7 @@ mod options;
 mod parse;
 mod python;
 mod result;
+mod tokens;
 
 pub use error::Error;
 pub use language::Language;
@@ -35,11 +36,13 @@ pub fn read_opts(path: &Path, opts: Options) -> Result<FoldResult> {
     })?;
 
     if opts.level == Level::Full {
+        let tokens_est = tokens::estimate(&source);
         return Ok(FoldResult {
             content: source,
             symbols: Vec::new(),
             hidden_ranges: Vec::new(),
             language: language.name().to_string(),
+            tokens_est,
         });
     }
 
@@ -51,10 +54,12 @@ pub fn read_opts(path: &Path, opts: Options) -> Result<FoldResult> {
         Language::Python => python::render(&source, &tree, opts.level, &opts.focus),
     };
 
+    let tokens_est = tokens::estimate(&out.content);
     Ok(FoldResult {
         content: out.content,
         symbols: out.symbols,
         hidden_ranges: out.hidden_ranges,
         language: language.name().to_string(),
+        tokens_est,
     })
 }
