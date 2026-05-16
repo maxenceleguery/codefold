@@ -12,6 +12,7 @@ pub enum Language {
     TypeScriptTsx,
     Rust,
     Go,
+    Markdown,
 }
 
 impl Language {
@@ -22,13 +23,15 @@ impl Language {
             Language::TypeScriptTsx => "tsx",
             Language::Rust => "rust",
             Language::Go => "go",
+            Language::Markdown => "markdown",
         }
     }
 
     /// Extensions recognized by `detect`, kept as a single source of truth so
     /// error messages stay in sync with the matcher.
-    pub const SUPPORTED_EXTENSIONS: &'static [&'static str] =
-        &["py", "pyi", "ts", "tsx", "jsx", "rs", "go"];
+    pub const SUPPORTED_EXTENSIONS: &'static [&'static str] = &[
+        "py", "pyi", "ts", "tsx", "jsx", "rs", "go", "md", "markdown",
+    ];
 
     pub fn detect(path: &Path) -> Result<Self, Error> {
         let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
@@ -38,6 +41,7 @@ impl Language {
             "tsx" | "jsx" => Ok(Language::TypeScriptTsx),
             "rs" => Ok(Language::Rust),
             "go" => Ok(Language::Go),
+            "md" | "markdown" => Ok(Language::Markdown),
             other => Err(Error::UnsupportedLanguage(other.to_string())),
         }
     }

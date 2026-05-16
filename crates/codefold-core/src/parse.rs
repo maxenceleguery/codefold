@@ -10,6 +10,15 @@ pub fn parse(language: Language, source: &str) -> Result<Tree, Error> {
         Language::TypeScriptTsx => tree_sitter_typescript::language_tsx(),
         Language::Rust => tree_sitter_rust::language(),
         Language::Go => tree_sitter_go::language(),
+        // Markdown is handled outside tree-sitter (pulldown_cmark in markdown.rs).
+        // We never reach this arm because `read_opts` dispatches to markdown
+        // before invoking the tree-sitter parser. Return Python's language as
+        // a harmless placeholder so the match stays exhaustive.
+        Language::Markdown => {
+            return Err(Error::Parse {
+                path: Default::default(),
+            })
+        }
     };
     parser
         .set_language(&ts_language)
