@@ -1,0 +1,17 @@
+[package]
+name = "codefold-py"
+description = "Python bindings for codefold-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "codefold"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+codefold-core = { path = "../../crates/codefold-core" }
+pyo3 = { version = "0.23", features = ["extension-module", "abi3-py38"] }

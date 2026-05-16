@@ -28,7 +28,15 @@ CLI (Rust toolchain required):
 cargo install --path crates/codefold-cli
 ```
 
-Python / Node bindings: coming.
+Python (requires Rust toolchain at install time until binary wheels are on PyPI):
+
+```sh
+uv venv && source .venv/bin/activate
+uv pip install maturin
+uv run maturin develop --release --manifest-path bindings/python/Cargo.toml
+```
+
+Node binding: coming.
 
 ## Use
 
@@ -53,6 +61,19 @@ let opts = Options::new(Level::Signatures).focus(["login", "verify_token"]);
 let r = read_opts("src/auth.py".as_ref(), opts)?;
 ```
 
+As a Python library:
+
+```python
+import codefold
+
+r = codefold.read("src/auth.py", level="signatures")
+print(r.content)
+print(f"~{r.tokens_est} tokens, {len(r.symbols)} symbols, {r.language}")
+
+# With focus
+r = codefold.read("src/auth.py", level="signatures", focus=["login", "verify_token"])
+```
+
 ## Levels
 
 | Level | What you get |
@@ -75,10 +96,11 @@ If you're building an agent framework or a code-aware tool and you need granular
 
 ## Status
 
-Early. v0.3.0. Python, TypeScript, Rust. API is not yet stable.
+Early. v0.4.0. Python, TypeScript, Rust. API is not yet stable.
 
 ### Changelog
 
+- **0.4.0** — Python bindings via PyO3 + maturin (`import codefold`). Pinned CI clippy to a known-good toolchain.
 - **0.3.0** — Rust language support (`.rs`). `pub` filter at Public level; trait-impl methods kept regardless of `pub`. GitHub Actions CI on Linux/macOS/Windows.
 - **0.2.0** — `Public` level (Python `_`-prefix filter, TypeScript `export`/`private` filter). `Level` enum marked `#[non_exhaustive]`.
 - **0.1.0** — Initial release. Python and TypeScript, `Full` / `Signatures` / `Bodies` levels, `focus=[...]`, token estimation, CLI, criterion benchmarks.

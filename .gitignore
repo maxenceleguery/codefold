@@ -16,8 +16,11 @@ __pycache__/
 *.pyc
 .venv/
 *.egg-info/
+*.so
+*.pyd
 dist/
 build/
+wheels/
 
 # Node
 node_modules/

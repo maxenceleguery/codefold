@@ -1,0 +1,30 @@
+[build-system]
+requires = ["maturin>=1.4,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "codefold"
+description = "Structural code reader for LLM agents — Read, with zoom levels."
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.8"
+authors = [
+    { name = "maxenceleguery", email = "maxence.leguery@gmail.com" }
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Rust",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Libraries",
+]
+dynamic = ["version"]
+
+[project.urls]
+Repository = "https://github.com/maxenceleguery/codefold"
+
+[tool.maturin]
+module-name = "codefold"
+features = ["pyo3/extension-module"]
