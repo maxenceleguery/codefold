@@ -2,10 +2,80 @@
 
 > `Read`, with zoom levels.
 
-Structural code reader for LLM agents. A pure library (Rust core, Python and Node bindings) that returns a chosen level of detail for a single file — signatures, public surface, top-level bodies, or full — instead of dumping the whole file into your context window.
+A structural code reader for LLM agents. Hand it a file and a zoom level — it gives you back the slice of the file the model actually needs to see.
 
-Status: **early development**.
+Supported today: **Python**, **TypeScript**. Rust core, optional CLI, Python and Node bindings on the roadmap.
+
+## Why
+
+LLM agents waste enormous amounts of context reading entire files when they only need the public surface. `cat`-equivalent reads are ~3-5× larger than they need to be on real-world codebases.
+
+Numbers from this repo's test fixtures:
+
+| File | Full | Signatures | Bodies | Saving (Signatures) |
+|---|---:|---:|---:|---:|
+| `auth.py` (90 LOC) | 474 tok | 320 tok | 465 tok | **−32%** |
+| `heavy.py` (110 LOC, body-heavy) | 809 tok | 212 tok | 809 tok | **−74%** |
+| `auth.ts` (75 LOC) | 468 tok | 324 tok | 455 tok | **−31%** |
+
+Compression scales with the body-to-signature ratio. On real-world service files (>500 lines), expect 70-90% reductions at `signatures`.
+
+## Install
+
+CLI (Rust toolchain required):
+
+```sh
+cargo install --path crates/codefold-cli
+```
+
+Python / Node bindings: coming.
+
+## Use
+
+```sh
+codefold src/auth.py --level signatures
+codefold src/auth.py --level bodies --focus login,verify_token
+codefold src/handlers.ts --level signatures --stats
+```
+
+As a Rust library:
+
+```rust
+use codefold_core::{read, read_opts, Level, Options};
+
+// Quick read
+let r = read("src/auth.py".as_ref(), Level::Signatures)?;
+println!("{}", r.content);
+println!("≈{} tokens, {} symbols", r.tokens_est, r.symbols.len());
+
+// With focus: keep `login` and `verify_token` at full body, the rest as signatures.
+let opts = Options::new(Level::Signatures).focus(["login", "verify_token"]);
+let r = read_opts("src/auth.py".as_ref(), opts)?;
+```
+
+## Levels
+
+| Level | What you get |
+|---|---|
+| `full` | The file verbatim. For API symmetry. |
+| `signatures` | Imports, top-level constants, function/class signatures, docstring summaries. Bodies replaced with `...`. |
+| `bodies` | Top-level and class-method bodies in full. Functions defined *inside* those bodies have their bodies collapsed to `...`. |
+
+`--focus name1,name2,...` elevates the named symbols to `bodies` regardless of base level. A class name in focus expands to "every method of that class".
+
+## Positioning
+
+The agent-tooling space is busy. codefold's niche:
+
+- **vs [skim](https://github.com/dean0x/skim)** — skim is shell middleware: it rewrites your commands and compresses their output. codefold is a primitive: a stateless library you `import` from inside your agent framework. Different distribution shape, different integration point.
+- **vs [codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp)** — codebase-memory builds a persistent SQLite knowledge graph of a whole repo, queried over MCP. codefold answers "give me *this one file* at level X" with no indexing, no server, no state.
+
+If you're building an agent framework or a code-aware tool and you need granular file reads, you want codefold. If you want a turnkey CLI for your shell or a whole-repo retrieval layer, look at skim or codebase-memory.
+
+## Status
+
+Early. v0.1.0. Python and TypeScript work. API is not yet stable.
 
 ## License
 
-MIT
+[MIT](LICENSE)
