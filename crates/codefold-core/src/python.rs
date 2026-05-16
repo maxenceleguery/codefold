@@ -1,19 +1,22 @@
+use std::collections::HashSet;
+
 use tree_sitter::Node;
 
 use crate::result::{Symbol, SymbolKind};
+use crate::Level;
 
-pub fn render_signatures(source: &str, tree: &tree_sitter::Tree) -> RenderOutput {
-    let mut r = Renderer::new(source, Mode::Signatures);
-    r.render_module(tree.root_node());
-    RenderOutput {
-        content: r.out,
-        symbols: r.symbols,
-        hidden_ranges: r.hidden,
-    }
-}
-
-pub fn render_bodies(source: &str, tree: &tree_sitter::Tree) -> RenderOutput {
-    let mut r = Renderer::new(source, Mode::Bodies);
+pub fn render(
+    source: &str,
+    tree: &tree_sitter::Tree,
+    level: Level,
+    focus: &[String],
+) -> RenderOutput {
+    let base_mode = match level {
+        Level::Signatures => Mode::Signatures,
+        Level::Bodies => Mode::Bodies,
+        Level::Full => Mode::Bodies, // unreachable for non-Full callers; Full handled upstream
+    };
+    let mut r = Renderer::new(source, base_mode, focus.iter().cloned().collect());
     r.render_module(tree.root_node());
     RenderOutput {
         content: r.out,
@@ -36,20 +39,33 @@ pub struct RenderOutput {
 
 struct Renderer<'a> {
     source: &'a str,
-    mode: Mode,
+    base_mode: Mode,
+    focus: HashSet<String>,
+    in_focused_class: bool,
     out: String,
     symbols: Vec<Symbol>,
     hidden: Vec<(usize, usize)>,
 }
 
 impl<'a> Renderer<'a> {
-    fn new(source: &'a str, mode: Mode) -> Self {
+    fn new(source: &'a str, base_mode: Mode, focus: HashSet<String>) -> Self {
         Self {
             source,
-            mode,
+            base_mode,
+            focus,
+            in_focused_class: false,
             out: String::new(),
             symbols: Vec::new(),
             hidden: Vec::new(),
+        }
+    }
+
+    /// Effective mode for a symbol named `name`. Focus elevates Signatures → Bodies.
+    fn mode_for(&self, name: &str) -> Mode {
+        if self.in_focused_class || self.focus.contains(name) {
+            Mode::Bodies
+        } else {
+            self.base_mode
         }
     }
 
@@ -166,7 +182,14 @@ impl<'a> Renderer<'a> {
         // Emit everything before the body verbatim (decorators, def line, params, return type, colon).
         self.emit_slice(node.start_byte(), body.start_byte());
 
-        if self.mode == Mode::Bodies {
+        let effective_mode = self.mode_for(
+            &node
+                .child_by_field_name("name")
+                .map(|n| self.slice(n.start_byte(), n.end_byte()).to_string())
+                .unwrap_or_default(),
+        );
+
+        if effective_mode == Mode::Bodies {
             self.emit_body_with_nested_collapsed(body);
             return;
         }
@@ -232,7 +255,7 @@ impl<'a> Renderer<'a> {
             .unwrap_or_default();
 
         self.symbols.push(Symbol {
-            name,
+            name: name.clone(),
             kind: SymbolKind::Class,
             byte_start: node.start_byte(),
             byte_end: node.end_byte(),
@@ -248,6 +271,12 @@ impl<'a> Renderer<'a> {
 
         // Emit `class Name(bases):` (everything before body).
         self.emit_slice(node.start_byte(), body.start_byte());
+
+        // If the class itself is focused, all methods get Bodies mode.
+        let was_focused = self.in_focused_class;
+        if self.focus.contains(&name) {
+            self.in_focused_class = true;
+        }
 
         let mut cursor = body.walk();
         let children: Vec<Node<'a>> = body.children(&mut cursor).collect();
@@ -297,6 +326,8 @@ impl<'a> Renderer<'a> {
             self.out.push_str(&pad);
             self.out.push_str("...");
         }
+
+        self.in_focused_class = was_focused;
     }
 }
 
