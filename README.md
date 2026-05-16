@@ -4,7 +4,7 @@
 
 A structural code reader for LLM agents. Hand it a file and a zoom level — it gives you back the slice of the file the model actually needs to see.
 
-Supported today: **Python**, **TypeScript**, **Rust**, **Go**. Rust core, Python wheel, optional CLI. Node binding on the roadmap.
+Supported today: **Python** (`.py`/`.pyi`), **TypeScript** (`.ts`/`.tsx`), **JSX JavaScript** (`.jsx`), **Rust** (`.rs`), **Go** (`.go`). Rust core, Python wheel, Node binding, optional CLI.
 
 ## Why
 
@@ -62,6 +62,12 @@ The bare `codefold` name on npm was blocked as too similar to an existing
 codefold src/auth.py --level signatures
 codefold src/auth.py --level bodies --focus login,verify_token
 codefold src/handlers.ts --level signatures --stats
+
+# Multiple files at once (each prefixed with === path ===)
+codefold src/auth.py src/handlers.ts --level public
+
+# JSON output for programmatic consumers
+codefold src/auth.py --format json --level signatures
 ```
 
 ### Subcommands

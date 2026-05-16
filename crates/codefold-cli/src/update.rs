@@ -20,31 +20,36 @@ pub struct UpdateArgs {
     pub yes: bool,
 }
 
+/// Exit code emitted by `codefold update --check` when a newer release is
+/// available, so scripts can distinguish "outdated" from "error" (exit 1) and
+/// "up to date" (exit 0). Picked from the freedesktop convention of "non-fatal
+/// but actionable" codes.
+pub const EXIT_UPDATE_AVAILABLE: u8 = 10;
+
 pub fn run(args: &UpdateArgs, current: &str) -> ExitCode {
-    let latest_tag = match latest_release_tag() {
-        Ok(t) => t,
+    let release = match latest_release() {
+        Ok(r) => r,
         Err(e) => {
             eprintln!("codefold: update check failed: {e}");
             return ExitCode::from(1);
         }
     };
 
-    let latest_clean = latest_tag.trim_start_matches('v');
+    let latest_clean = release.tag.trim_start_matches('v');
     if !is_newer(latest_clean, current) {
         println!("codefold {current} is up to date.");
         return ExitCode::SUCCESS;
     }
 
     println!("codefold {current} installed.");
-    println!("→ {latest_tag} is available.");
+    println!("→ {} is available.", release.tag);
+    print_release_notes(&release.body);
 
     if args.check {
-        println!();
         println!("Run `codefold update` (without --check) to upgrade.");
-        return ExitCode::SUCCESS;
+        return ExitCode::from(EXIT_UPDATE_AVAILABLE);
     }
 
-    // Decide whether to apply.
     let should_apply = args.yes || prompt_yes_no(true);
     if !should_apply {
         println!("Skipping upgrade. To upgrade later, run: codefold update");
@@ -52,6 +57,24 @@ pub fn run(args: &UpdateArgs, current: &str) -> ExitCode {
     }
 
     apply_via_cargo()
+}
+
+fn print_release_notes(body: &str) {
+    let body = body.trim();
+    if body.is_empty() {
+        return;
+    }
+    const MAX_LINES: usize = 15;
+    let lines: Vec<&str> = body.lines().collect();
+    println!();
+    println!("--- release notes ---");
+    for line in lines.iter().take(MAX_LINES) {
+        println!("{line}");
+    }
+    if lines.len() > MAX_LINES {
+        println!("(... {} more lines on GitHub)", lines.len() - MAX_LINES);
+    }
+    println!();
 }
 
 fn prompt_yes_no(default_yes: bool) -> bool {
@@ -125,7 +148,12 @@ fn which_cargo() -> Option<()> {
     None
 }
 
-fn latest_release_tag() -> Result<String, String> {
+struct Release {
+    tag: String,
+    body: String,
+}
+
+fn latest_release() -> Result<Release, String> {
     let response = ureq::get(RELEASES_URL)
         .set(
             "User-Agent",
@@ -137,10 +165,17 @@ fn latest_release_tag() -> Result<String, String> {
         .map_err(|e| e.to_string())?;
 
     let json: serde_json::Value = response.into_json().map_err(|e| e.to_string())?;
-    json.get("tag_name")
+    let tag = json
+        .get("tag_name")
         .and_then(|v| v.as_str())
         .map(|s| s.to_string())
-        .ok_or_else(|| "missing `tag_name` in release response".to_string())
+        .ok_or_else(|| "missing `tag_name` in release response".to_string())?;
+    let body = json
+        .get("body")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    Ok(Release { tag, body })
 }
 
 /// Strict semver-ish comparison: returns true if `a` is strictly greater than `b`.

@@ -56,7 +56,7 @@ pub fn read_opts(path: &Path, opts: Options) -> Result<FoldResult> {
             let out = python::render(&source, &tree, opts.level, &opts.focus);
             (out.content, out.symbols, out.hidden_ranges)
         }
-        Language::TypeScript => {
+        Language::TypeScript | Language::TypeScriptTsx => {
             let out = typescript::render(&source, &tree, opts.level, &opts.focus);
             (out.content, out.symbols, out.hidden_ranges)
         }
