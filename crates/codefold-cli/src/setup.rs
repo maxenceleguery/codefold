@@ -28,12 +28,52 @@ pub struct SetupArgs {
     /// Print what would change without writing anything.
     #[arg(long)]
     dry_run: bool,
+
+    /// Show which managed files exist (per harness × scope) and whether they
+    /// are up-to-date with the current codefold version. Exits without writing.
+    #[arg(long, conflicts_with_all = ["uninstall", "dry_run"])]
+    list: bool,
+
+    /// Remove codefold integration. For files codefold appends a block to
+    /// (CLAUDE.md, copilot-instructions.md), the block is stripped. For files
+    /// codefold fully owns (cursor rule, SKILL.md), the file is deleted.
+    #[arg(long, conflicts_with = "list")]
+    uninstall: bool,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum, PartialEq, Eq)]
 pub enum SetupScope {
     Project,
     User,
+}
+
+/// Diagnostic helper for `codefold doctor`. Returns `(path, label)` for every
+/// target the user might have installed at the given scope, with labels:
+/// `up-to-date`, `absent`, `drifted`, `unmanaged`. Silently skips harnesses
+/// that don't apply to the scope (no leaked warnings).
+pub fn doctor_status(scope: SetupScope, version: &str) -> Vec<(PathBuf, String)> {
+    let args = SetupArgs {
+        scope,
+        harness: Vec::new(),
+        project_dir: None,
+        dry_run: false,
+        list: false,
+        uninstall: false,
+    };
+    let (targets, _warnings) = plan_targets_quiet(&args);
+    targets
+        .into_iter()
+        .map(|t| {
+            let s = check_status(&t, version);
+            let label = match s {
+                Status::Absent => "absent",
+                Status::UpToDate => "up-to-date",
+                Status::Drifted => "drifted",
+                Status::Unmanaged => "unmanaged",
+            };
+            (t.path, label.to_string())
+        })
+        .collect()
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum, PartialEq, Eq)]
@@ -47,6 +87,44 @@ const MARKER_START: &str = "<!-- codefold:start -->";
 const MARKER_END: &str = "<!-- codefold:end -->";
 
 pub fn run(args: &SetupArgs, version: &str) -> ExitCode {
+    let targets = plan_targets(args);
+    if args.list {
+        return list_targets(&targets, version);
+    }
+    if args.uninstall {
+        return uninstall_targets(&targets, args.dry_run);
+    }
+    install_targets(&targets, args.dry_run, version)
+}
+
+/// A planning unit: where to act and how. Content templates are looked up by
+/// `(mode, file basename)` at apply time so the same `Target` set is reusable
+/// across install / list / uninstall.
+struct Target {
+    path: PathBuf,
+    mode: TargetMode,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum TargetMode {
+    /// File is co-owned: we manage a `<!-- codefold:start --> ... <!-- codefold:end -->` block.
+    Block,
+    /// File is fully owned: we write the entire file.
+    Full,
+}
+
+fn plan_targets(args: &SetupArgs) -> Vec<Target> {
+    let (targets, warnings) = plan_targets_quiet(args);
+    for w in warnings {
+        eprintln!("{w}");
+    }
+    targets
+}
+
+/// Same as `plan_targets` but collects warnings (e.g. "--scope user not
+/// supported for Cursor") rather than printing them, so callers like `doctor`
+/// can decide whether to surface them.
+fn plan_targets_quiet(args: &SetupArgs) -> (Vec<Target>, Vec<String>) {
     let harnesses: Vec<HarnessArg> = if args.harness.is_empty() {
         vec![
             HarnessArg::ClaudeCode,
@@ -63,135 +141,266 @@ pub fn run(args: &SetupArgs, version: &str) -> ExitCode {
         .unwrap_or_else(|| std::env::current_dir().expect("cwd"));
     let user_home = dirs::home_dir();
 
-    let mut changes: Vec<Change> = Vec::new();
-
+    let mut targets = Vec::new();
+    let mut warnings = Vec::new();
     for h in &harnesses {
         match (h, args.scope) {
             (HarnessArg::ClaudeCode, SetupScope::Project) => {
-                changes.push(plan_block_write(
-                    project_root.join("CLAUDE.md"),
-                    claude_md_block(version),
-                ));
+                targets.push(Target {
+                    path: project_root.join("CLAUDE.md"),
+                    mode: TargetMode::Block,
+                });
             }
-            (HarnessArg::ClaudeCode, SetupScope::User) => match user_home.as_ref() {
-                Some(home) => {
-                    changes.push(plan_block_write(
-                        home.join(".claude").join("CLAUDE.md"),
-                        claude_md_block(version),
-                    ));
-                    changes.push(plan_full_write(
-                        home.join(".claude")
+            (HarnessArg::ClaudeCode, SetupScope::User) => {
+                if let Some(home) = user_home.as_ref() {
+                    targets.push(Target {
+                        path: home.join(".claude").join("CLAUDE.md"),
+                        mode: TargetMode::Block,
+                    });
+                    targets.push(Target {
+                        path: home
+                            .join(".claude")
                             .join("skills")
                             .join("codefold")
                             .join("SKILL.md"),
-                        skill_md(version),
-                    ));
+                        mode: TargetMode::Full,
+                    });
+                } else {
+                    warnings.push(
+                        "codefold: could not resolve home directory; skipping --scope user."
+                            .to_string(),
+                    );
                 }
-                None => {
-                    eprintln!("codefold: could not resolve home directory; skipping --scope user.");
-                }
-            },
+            }
             (HarnessArg::Cursor, SetupScope::Project) => {
-                changes.push(plan_full_write(
-                    project_root
+                targets.push(Target {
+                    path: project_root
                         .join(".cursor")
                         .join("rules")
                         .join("codefold.mdc"),
-                    cursor_rule(version),
-                ));
+                    mode: TargetMode::Full,
+                });
             }
             (HarnessArg::Copilot, SetupScope::Project) => {
-                changes.push(plan_block_write(
-                    project_root.join(".github").join("copilot-instructions.md"),
-                    copilot_block(version),
-                ));
+                targets.push(Target {
+                    path: project_root.join(".github").join("copilot-instructions.md"),
+                    mode: TargetMode::Block,
+                });
             }
-            // Cursor / Copilot don't have a user-level config in common practice.
             (HarnessArg::Cursor, SetupScope::User) | (HarnessArg::Copilot, SetupScope::User) => {
-                eprintln!(
+                warnings.push(format!(
                     "codefold: --scope user is not supported for {:?}; skipping.",
                     h
-                );
+                ));
             }
         }
     }
+    (targets, warnings)
+}
 
+fn content_for(target: &Target, version: &str) -> String {
+    let name = target
+        .path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("");
+    match (target.mode, name) {
+        (TargetMode::Block, "CLAUDE.md") => claude_md_block(version),
+        (TargetMode::Block, "copilot-instructions.md") => copilot_block(version),
+        (TargetMode::Full, "codefold.mdc") => cursor_rule(version),
+        (TargetMode::Full, "SKILL.md") => skill_md(version),
+        _ => String::new(),
+    }
+}
+
+fn install_targets(targets: &[Target], dry_run: bool, version: &str) -> ExitCode {
     let mut wrote = 0usize;
     let mut errors = 0usize;
-    for change in &changes {
-        if args.dry_run {
-            println!("[dry-run] would write {}", change.path.display());
+    for t in targets {
+        let content = content_for(t, version);
+        if dry_run {
+            println!("[dry-run] would write {}", t.path.display());
             continue;
         }
-        match change.apply() {
+        let result = match t.mode {
+            TargetMode::Block => apply_block(&t.path, &content),
+            TargetMode::Full => apply_full(&t.path, &content),
+        };
+        match result {
             Ok(true) => {
-                println!("wrote {}", change.path.display());
+                println!("wrote {}", t.path.display());
                 wrote += 1;
             }
-            Ok(false) => {
-                println!("up to date {}", change.path.display());
-            }
+            Ok(false) => println!("up to date {}", t.path.display()),
             Err(e) => {
-                eprintln!("error {}: {e}", change.path.display());
+                eprintln!("error {}: {e}", t.path.display());
                 errors += 1;
             }
         }
     }
-
     if errors > 0 {
         eprintln!("codefold setup: {errors} error(s).");
-        ExitCode::from(1)
+        return ExitCode::from(1);
+    }
+    if !dry_run {
+        println!();
+        println!("Done. Wrote {wrote} file(s). codefold is now installed in your harnesses.");
+        println!("Subagents spawned by these harnesses will see the instructions.");
+    }
+    ExitCode::SUCCESS
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum Status {
+    Absent,
+    UpToDate,
+    Drifted,
+    Unmanaged,
+}
+
+fn check_status(target: &Target, version: &str) -> Status {
+    let existing = match fs::read_to_string(&target.path) {
+        Ok(s) => s,
+        Err(_) => return Status::Absent,
+    };
+    let expected = content_for(target, version);
+    match target.mode {
+        TargetMode::Full => {
+            if existing == expected {
+                Status::UpToDate
+            } else {
+                // We own the file; differing content means an older version installed it.
+                Status::Drifted
+            }
+        }
+        TargetMode::Block => {
+            let block = extract_codefold_block(&existing);
+            match block {
+                None => Status::Unmanaged,
+                Some(b) if b.trim_end() == expected.trim_end() => Status::UpToDate,
+                Some(_) => Status::Drifted,
+            }
+        }
+    }
+}
+
+fn extract_codefold_block(text: &str) -> Option<&str> {
+    let start = text.find(MARKER_START)?;
+    let end = text.find(MARKER_END)?;
+    if end <= start {
+        return None;
+    }
+    Some(&text[start..end + MARKER_END.len()])
+}
+
+fn list_targets(targets: &[Target], version: &str) -> ExitCode {
+    if targets.is_empty() {
+        println!("(no targets matched the requested scope × harness combination)");
+        return ExitCode::SUCCESS;
+    }
+    println!("{:<11}  {:<6}  path", "status", "mode",);
+    println!("{}", "-".repeat(60));
+    for t in targets {
+        let status = check_status(t, version);
+        let mode = match t.mode {
+            TargetMode::Block => "block",
+            TargetMode::Full => "full",
+        };
+        let label = match status {
+            Status::Absent => "absent",
+            Status::UpToDate => "up-to-date",
+            Status::Drifted => "DRIFTED",
+            Status::Unmanaged => "unmanaged",
+        };
+        println!("{:<11}  {:<6}  {}", label, mode, t.path.display());
+    }
+    ExitCode::SUCCESS
+}
+
+fn uninstall_targets(targets: &[Target], dry_run: bool) -> ExitCode {
+    let mut removed = 0usize;
+    let mut errors = 0usize;
+    for t in targets {
+        if dry_run {
+            println!("[dry-run] would uninstall {}", t.path.display());
+            continue;
+        }
+        let result: std::io::Result<bool> = match t.mode {
+            TargetMode::Block => strip_block_from_file(&t.path),
+            TargetMode::Full => delete_file_if_exists(&t.path),
+        };
+        match result {
+            Ok(true) => {
+                println!("removed {}", t.path.display());
+                removed += 1;
+            }
+            Ok(false) => println!("not present {}", t.path.display()),
+            Err(e) => {
+                eprintln!("error {}: {e}", t.path.display());
+                errors += 1;
+            }
+        }
+    }
+    if errors > 0 {
+        eprintln!("codefold setup --uninstall: {errors} error(s).");
+        return ExitCode::from(1);
+    }
+    if !dry_run {
+        println!();
+        println!("Done. Removed {removed} file(s) / block(s).");
+    }
+    ExitCode::SUCCESS
+}
+
+/// Remove the codefold block from a Block-mode file. Returns Ok(true) if the
+/// file changed, Ok(false) if no block was found.
+fn strip_block_from_file(path: &Path) -> std::io::Result<bool> {
+    let Ok(existing) = fs::read_to_string(path) else {
+        return Ok(false);
+    };
+    let (Some(start), Some(end)) = (existing.find(MARKER_START), existing.find(MARKER_END)) else {
+        return Ok(false);
+    };
+    let end_full = end + MARKER_END.len();
+    if end_full <= start {
+        return Ok(false);
+    }
+    let mut out = String::with_capacity(existing.len());
+    // Drop the block and a single trailing newline if present, and trim the
+    // blank line that typically precedes our block.
+    let before = existing[..start].trim_end_matches('\n');
+    let before = before.trim_end_matches('\n');
+    out.push_str(before);
+    let after = &existing[end_full..];
+    let after = after.strip_prefix('\n').unwrap_or(after);
+    if !after.trim().is_empty() {
+        out.push_str("\n\n");
+        out.push_str(after.trim_start_matches('\n'));
     } else {
-        if !args.dry_run {
-            println!();
-            println!("Done. Wrote {wrote} file(s). codefold is now installed in your harnesses.");
-            println!("Subagents spawned by these harnesses will see the instructions.");
-        }
-        ExitCode::SUCCESS
+        out.push('\n');
     }
-}
-
-// ----- change planning -------------------------------------------------------
-
-/// A pending file change. Either a delimited block-replace (idempotent merge
-/// into an existing file) or a full-file write.
-struct Change {
-    path: PathBuf,
-    mode: ChangeMode,
-}
-
-enum ChangeMode {
-    /// Insert or replace a `<!-- codefold:start --> ... <!-- codefold:end -->`
-    /// block in the file. Existing surrounding content is preserved.
-    Block(String),
-    /// Overwrite the file with the given content.
-    Full(String),
-}
-
-fn plan_block_write(path: PathBuf, block: String) -> Change {
-    Change {
-        path,
-        mode: ChangeMode::Block(block),
+    if out == existing {
+        return Ok(false);
     }
+    // If the file is now empty (or only whitespace) and we own the parent dir,
+    // delete the file outright so we don't leave a stub.
+    if out.trim().is_empty() {
+        fs::remove_file(path)?;
+        return Ok(true);
+    }
+    fs::write(path, out)?;
+    Ok(true)
 }
 
-fn plan_full_write(path: PathBuf, content: String) -> Change {
-    Change {
-        path,
-        mode: ChangeMode::Full(content),
+fn delete_file_if_exists(path: &Path) -> std::io::Result<bool> {
+    if !path.exists() {
+        return Ok(false);
     }
+    fs::remove_file(path)?;
+    Ok(true)
 }
 
-impl Change {
-    /// Apply the change. Returns Ok(true) if the file changed, Ok(false) if
-    /// no change was needed.
-    fn apply(&self) -> std::io::Result<bool> {
-        match &self.mode {
-            ChangeMode::Block(block) => apply_block(&self.path, block),
-            ChangeMode::Full(content) => apply_full(&self.path, content),
-        }
-    }
-}
+// ----- low-level file ops ----------------------------------------------------
 
 fn apply_block(path: &Path, block: &str) -> std::io::Result<bool> {
     let existing = fs::read_to_string(path).ok();
@@ -422,6 +631,8 @@ mod tests {
             harness: vec![HarnessArg::ClaudeCode],
             project_dir: Some(tmp.path().to_path_buf()),
             dry_run: false,
+            list: false,
+            uninstall: false,
         };
         // ExitCode's Debug format is platform-specific (unix_exit_status vs
         // windows_exit_status); we just assert on the side-effect.
@@ -446,6 +657,8 @@ mod tests {
             harness: vec![HarnessArg::ClaudeCode],
             project_dir: Some(tmp.path().to_path_buf()),
             dry_run: false,
+            list: false,
+            uninstall: false,
         };
         run(&args, "test");
         let after_first = read(&path);
@@ -475,6 +688,8 @@ mod tests {
             harness: vec![HarnessArg::ClaudeCode],
             project_dir: Some(tmp.path().to_path_buf()),
             dry_run: false,
+            list: false,
+            uninstall: false,
         };
         run(&args, "new-version");
 
@@ -493,6 +708,8 @@ mod tests {
             harness: vec![HarnessArg::Cursor],
             project_dir: Some(tmp.path().to_path_buf()),
             dry_run: false,
+            list: false,
+            uninstall: false,
         };
         run(&args, "test");
         let rule = tmp
@@ -514,6 +731,8 @@ mod tests {
             harness: vec![HarnessArg::Copilot],
             project_dir: Some(tmp.path().to_path_buf()),
             dry_run: false,
+            list: false,
+            uninstall: false,
         };
         run(&args, "test");
         let path = tmp.path().join(".github").join("copilot-instructions.md");
@@ -534,10 +753,127 @@ mod tests {
             ],
             project_dir: Some(tmp.path().to_path_buf()),
             dry_run: true,
+            list: false,
+            uninstall: false,
         };
         run(&args, "test");
         assert!(!tmp.path().join("CLAUDE.md").exists());
         assert!(!tmp.path().join(".cursor").exists());
         assert!(!tmp.path().join(".github").exists());
+    }
+
+    fn project_args(tmp: &TempDir) -> SetupArgs {
+        SetupArgs {
+            scope: SetupScope::Project,
+            harness: vec![
+                HarnessArg::ClaudeCode,
+                HarnessArg::Cursor,
+                HarnessArg::Copilot,
+            ],
+            project_dir: Some(tmp.path().to_path_buf()),
+            dry_run: false,
+            list: false,
+            uninstall: false,
+        }
+    }
+
+    #[test]
+    fn check_status_classifies_correctly() {
+        let tmp = TempDir::new().unwrap();
+        let target_claude = Target {
+            path: tmp.path().join("CLAUDE.md"),
+            mode: TargetMode::Block,
+        };
+        let target_cursor = Target {
+            path: tmp
+                .path()
+                .join(".cursor")
+                .join("rules")
+                .join("codefold.mdc"),
+            mode: TargetMode::Full,
+        };
+
+        // Absent
+        assert_eq!(check_status(&target_claude, "v"), Status::Absent);
+        assert_eq!(check_status(&target_cursor, "v"), Status::Absent);
+
+        // Unmanaged: file exists with no codefold block (Block mode only)
+        fs::write(&target_claude.path, "# hand-written\n").unwrap();
+        assert_eq!(check_status(&target_claude, "v"), Status::Unmanaged);
+
+        // Up-to-date after install
+        let args = project_args(&tmp);
+        run(&args, "v-current");
+        assert_eq!(check_status(&target_claude, "v-current"), Status::UpToDate);
+        assert_eq!(check_status(&target_cursor, "v-current"), Status::UpToDate);
+
+        // Drifted when version differs (template embeds the version)
+        assert_eq!(check_status(&target_claude, "v-other"), Status::Drifted);
+        assert_eq!(check_status(&target_cursor, "v-other"), Status::Drifted);
+    }
+
+    #[test]
+    fn uninstall_strips_block_and_leaves_user_content() {
+        let tmp = TempDir::new().unwrap();
+        let path = tmp.path().join("CLAUDE.md");
+        fs::write(&path, "# Existing content\n\nSome notes.\n").unwrap();
+
+        run(&project_args(&tmp), "v");
+        let post_install = read(&path);
+        assert!(post_install.contains(MARKER_START));
+
+        let mut args = project_args(&tmp);
+        args.uninstall = true;
+        run(&args, "v");
+        // File should still exist with the user's original content but no block.
+        let post_uninstall = read(&path);
+        assert!(
+            post_uninstall.starts_with("# Existing content"),
+            "user content should be preserved, got: {post_uninstall:?}"
+        );
+        assert!(!post_uninstall.contains(MARKER_START));
+        assert!(!post_uninstall.contains(MARKER_END));
+    }
+
+    #[test]
+    fn uninstall_deletes_full_owned_files() {
+        let tmp = TempDir::new().unwrap();
+        run(&project_args(&tmp), "v");
+        let cursor_rule = tmp
+            .path()
+            .join(".cursor")
+            .join("rules")
+            .join("codefold.mdc");
+        assert!(cursor_rule.exists());
+
+        let mut args = project_args(&tmp);
+        args.uninstall = true;
+        run(&args, "v");
+
+        assert!(
+            !cursor_rule.exists(),
+            "fully-owned cursor rule should be deleted on uninstall"
+        );
+    }
+
+    #[test]
+    fn uninstall_on_empty_state_is_a_noop() {
+        let tmp = TempDir::new().unwrap();
+        let mut args = project_args(&tmp);
+        args.uninstall = true;
+        // Should not crash on absent files.
+        run(&args, "v");
+        assert!(!tmp.path().join("CLAUDE.md").exists());
+    }
+
+    #[test]
+    fn list_runs_without_writing() {
+        let tmp = TempDir::new().unwrap();
+        let mut args = project_args(&tmp);
+        args.list = true;
+        run(&args, "v");
+        // --list must not create files.
+        assert!(!tmp.path().join("CLAUDE.md").exists());
+        assert!(!tmp.path().join(".cursor").exists());
     }
 }

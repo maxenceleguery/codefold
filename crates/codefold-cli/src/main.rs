@@ -4,6 +4,7 @@ use std::process::ExitCode;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use codefold_core::{read_opts, Level, Options};
 
+mod doctor;
 mod setup;
 mod update;
 
@@ -44,6 +45,8 @@ enum Command {
     Update(update::UpdateArgs),
     /// Install codefold integration into LLM agent harnesses on this project or your user account.
     Setup(setup::SetupArgs),
+    /// Diagnose the install: cargo availability, network, integration files.
+    Doctor(doctor::DoctorArgs),
 }
 
 #[derive(Args, Debug)]
@@ -86,6 +89,7 @@ fn main() -> ExitCode {
         Some(Command::Read(args)) => run_read(&args.path, args.level, args.focus, args.stats),
         Some(Command::Update(args)) => update::run(&args, env!("CARGO_PKG_VERSION")),
         Some(Command::Setup(args)) => setup::run(&args, env!("CARGO_PKG_VERSION")),
+        Some(Command::Doctor(args)) => doctor::run(&args, env!("CARGO_PKG_VERSION")),
         None => match cli.path {
             Some(path) => run_read(&path, cli.level, cli.focus, cli.stats),
             None => {

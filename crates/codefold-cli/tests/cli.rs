@@ -89,3 +89,60 @@ fn typescript_file_works() {
         .success()
         .stdout(predicate::str::contains("class TokenStore"));
 }
+
+#[test]
+fn doctor_runs_and_prints_diagnostics() {
+    let out = Command::cargo_bin("codefold")
+        .unwrap()
+        .args(["doctor", "--scope", "project"])
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(stdout.contains("codefold doctor"));
+    assert!(stdout.contains("cargo"));
+    assert!(stdout.contains("Integration (project scope)"));
+}
+
+#[test]
+fn setup_list_does_not_write() {
+    let tmp = tempfile::TempDir::new().unwrap();
+    Command::cargo_bin("codefold")
+        .unwrap()
+        .args([
+            "setup",
+            "--list",
+            "--project-dir",
+            tmp.path().to_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("status").and(predicate::str::contains("path")));
+    assert!(!tmp.path().join("CLAUDE.md").exists());
+    assert!(!tmp.path().join(".cursor").exists());
+}
+
+#[test]
+fn setup_uninstall_removes_block_via_cli() {
+    let tmp = tempfile::TempDir::new().unwrap();
+    Command::cargo_bin("codefold")
+        .unwrap()
+        .args(["setup", "--project-dir", tmp.path().to_str().unwrap()])
+        .assert()
+        .success();
+    assert!(tmp.path().join("CLAUDE.md").exists());
+
+    Command::cargo_bin("codefold")
+        .unwrap()
+        .args([
+            "setup",
+            "--uninstall",
+            "--project-dir",
+            tmp.path().to_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("removed"));
+    // CLAUDE.md was created solely by codefold (no prior content), so it
+    // should now be gone after uninstall.
+    assert!(!tmp.path().join("CLAUDE.md").exists());
+}
