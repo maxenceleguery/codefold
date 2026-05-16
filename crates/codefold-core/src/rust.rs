@@ -255,20 +255,19 @@ impl<'a> Renderer<'a> {
             if child.start_byte() > prev_end {
                 self.emit_slice(prev_end, child.start_byte());
             }
+            let hide_for_visibility = filter_inner && !has_pub_visibility(child);
             match child.kind() {
+                "function_item" if hide_for_visibility => {
+                    self.hide(child.start_byte(), child.end_byte());
+                }
                 "function_item" => {
-                    if filter_inner && !has_pub_visibility(child) {
-                        self.hide(child.start_byte(), child.end_byte());
-                    } else {
-                        self.render_function_item(child, SymbolKind::Method);
-                    }
+                    self.render_function_item(child, SymbolKind::Method);
+                }
+                "const_item" | "type_item" | "associated_type" if hide_for_visibility => {
+                    self.hide(child.start_byte(), child.end_byte());
                 }
                 "const_item" | "type_item" | "associated_type" => {
-                    if filter_inner && !has_pub_visibility(child) {
-                        self.hide(child.start_byte(), child.end_byte());
-                    } else {
-                        self.emit_slice(child.start_byte(), child.end_byte());
-                    }
+                    self.emit_slice(child.start_byte(), child.end_byte());
                 }
                 "attribute_item" | "inner_attribute_item" | "line_comment" | "block_comment" => {
                     self.emit_slice(child.start_byte(), child.end_byte());
