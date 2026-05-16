@@ -1,12 +1,17 @@
 [package]
 name = "codefold-core"
-description = "Structural code reader for LLM agents — Read, with zoom levels"
+description = "Structural code reader for LLM agents — `Read`, with zoom levels. Python, TypeScript, Rust, Go."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
 rust-version.workspace = true
+readme = "../../README.md"
+keywords = ["llm", "ai", "code", "parser", "tree-sitter"]
+categories = ["development-tools", "parser-implementations", "text-processing"]
 
 [dependencies]
 tree-sitter = { workspace = true }

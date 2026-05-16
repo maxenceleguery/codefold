@@ -1,19 +1,25 @@
 [package]
 name = "codefold-cli"
-description = "CLI wrapper around codefold-core"
+description = "CLI for codefold — structural code reader for LLM agents."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
+homepage.workspace = true
 rust-version.workspace = true
+readme = "../../README.md"
+keywords = ["llm", "ai", "code", "cli", "tree-sitter"]
+categories = ["command-line-utilities", "development-tools", "parser-implementations"]
 
 [[bin]]
 name = "codefold"
 path = "src/main.rs"
 
 [dependencies]
-codefold-core = { path = "../codefold-core" }
+# `version` here is what cargo publishes against. The `path` is used locally;
+# crates.io strips it and uses the version. Keep these in sync with workspace.package.version.
+codefold-core = { path = "../codefold-core", version = "0.6.0" }
 clap = { workspace = true }
 
 [dev-dependencies]
