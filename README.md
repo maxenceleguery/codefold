@@ -59,6 +59,7 @@ let r = read_opts("src/auth.py".as_ref(), opts)?;
 |---|---|
 | `full` | The file verbatim. For API symmetry. |
 | `signatures` | Imports, top-level constants, function/class signatures, docstring summaries. Bodies replaced with `...`. |
+| `public` | Like `signatures`, but additionally filters out non-public symbols (Python: names starting with `_`; TypeScript: declarations not wrapped in `export` and methods marked `private`/`protected`). |
 | `bodies` | Top-level and class-method bodies in full. Functions defined *inside* those bodies have their bodies collapsed to `...`. |
 
 `--focus name1,name2,...` elevates the named symbols to `bodies` regardless of base level. A class name in focus expands to "every method of that class".
@@ -74,7 +75,12 @@ If you're building an agent framework or a code-aware tool and you need granular
 
 ## Status
 
-Early. v0.1.0. Python and TypeScript work. API is not yet stable.
+Early. v0.2.0. Python and TypeScript work. API is not yet stable.
+
+### Changelog
+
+- **0.2.0** — `Public` level (Python `_`-prefix filter, TypeScript `export`/`private` filter). `Level` enum marked `#[non_exhaustive]`.
+- **0.1.0** — Initial release. Python and TypeScript, `Full` / `Signatures` / `Bodies` levels, `focus=[...]`, token estimation, CLI, criterion benchmarks.
 
 ## License
 
