@@ -180,7 +180,7 @@ fn latest_release() -> Result<Release, String> {
 
 /// Strict semver-ish comparison: returns true if `a` is strictly greater than `b`.
 /// Both inputs must be `MAJOR.MINOR.PATCH` (no pre-release / build metadata).
-fn is_newer(a: &str, b: &str) -> bool {
+pub(crate) fn is_newer(a: &str, b: &str) -> bool {
     fn parts(v: &str) -> Option<(u64, u64, u64)> {
         let mut iter = v.split('.');
         let major = iter.next()?.parse().ok()?;
