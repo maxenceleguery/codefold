@@ -63,12 +63,7 @@ struct Renderer<'a> {
 }
 
 impl<'a> Renderer<'a> {
-    fn new(
-        source: &'a str,
-        base_mode: Mode,
-        public_only: bool,
-        focus: HashSet<String>,
-    ) -> Self {
+    fn new(source: &'a str, base_mode: Mode, public_only: bool, focus: HashSet<String>) -> Self {
         Self {
             source,
             base_mode,
@@ -144,8 +139,8 @@ impl<'a> Renderer<'a> {
                 // Could be a docstring/expression, or an assignment wrapped by
                 // tree-sitter-python's grammar.
                 let inner = node.named_child(0);
-                let wrapped_assignment = inner
-                    .filter(|n| matches!(n.kind(), "assignment" | "augmented_assignment"));
+                let wrapped_assignment =
+                    inner.filter(|n| matches!(n.kind(), "assignment" | "augmented_assignment"));
                 if let Some(inner) = wrapped_assignment {
                     if self.public_only && !is_public_assignment(&inner, self.source) {
                         self.hide(node.start_byte(), node.end_byte());
@@ -433,7 +428,9 @@ fn is_public_assignment(assignment: &Node, source: &str) -> bool {
         return true;
     };
     let text = source.get(left.start_byte()..left.end_byte()).unwrap_or("");
-    let first_ident = text.split(|c: char| !(c.is_alphanumeric() || c == '_')).find(|s| !s.is_empty());
+    let first_ident = text
+        .split(|c: char| !(c.is_alphanumeric() || c == '_'))
+        .find(|s| !s.is_empty());
     match first_ident {
         Some(name) => is_public_name(name),
         None => true,

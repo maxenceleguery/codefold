@@ -11,7 +11,10 @@ fn fixture(name: &str) -> PathBuf {
 #[test]
 fn tokens_est_positive_for_non_empty_content() {
     let r = read(&fixture("python/auth.py"), Level::Full).unwrap();
-    assert!(r.tokens_est > 0, "tokens_est should be > 0 for non-empty file");
+    assert!(
+        r.tokens_est > 0,
+        "tokens_est should be > 0 for non-empty file"
+    );
 }
 
 #[test]

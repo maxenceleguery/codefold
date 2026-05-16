@@ -47,9 +47,7 @@ pub fn read_opts(path: &Path, opts: Options) -> Result<FoldResult> {
         });
     }
 
-    let tree = parse::parse(language, &source).map_err(|_| Error::Parse {
-        path: path.into(),
-    })?;
+    let tree = parse::parse(language, &source).map_err(|_| Error::Parse { path: path.into() })?;
 
     let (content, symbols, hidden_ranges) = match language {
         Language::Python => {

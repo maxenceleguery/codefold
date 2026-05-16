@@ -18,10 +18,7 @@ impl Language {
     }
 
     pub fn detect(path: &Path) -> Result<Self, Error> {
-        let ext = path
-            .extension()
-            .and_then(|e| e.to_str())
-            .unwrap_or("");
+        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
         match ext {
             "py" | "pyi" => Ok(Language::Python),
             "ts" => Ok(Language::TypeScript),

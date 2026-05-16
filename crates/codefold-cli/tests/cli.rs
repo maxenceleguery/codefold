@@ -54,10 +54,7 @@ fn focus_keeps_named_symbol_body() {
 fn stats_flag_emits_summary_to_stderr() {
     Command::cargo_bin("codefold")
         .unwrap()
-        .args([
-            fixture("python/auth.py").to_str().unwrap(),
-            "--stats",
-        ])
+        .args([fixture("python/auth.py").to_str().unwrap(), "--stats"])
         .assert()
         .success()
         .stderr(predicate::str::contains("[codefold]"))

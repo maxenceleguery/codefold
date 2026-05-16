@@ -56,12 +56,7 @@ struct Renderer<'a> {
 }
 
 impl<'a> Renderer<'a> {
-    fn new(
-        source: &'a str,
-        base_mode: Mode,
-        public_only: bool,
-        focus: HashSet<String>,
-    ) -> Self {
+    fn new(source: &'a str, base_mode: Mode, public_only: bool, focus: HashSet<String>) -> Self {
         Self {
             source,
             base_mode,
@@ -377,7 +372,9 @@ fn is_private_member(node: &Node, source: &str) -> bool {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         if child.kind() == "accessibility_modifier" {
-            let text = source.get(child.start_byte()..child.end_byte()).unwrap_or("");
+            let text = source
+                .get(child.start_byte()..child.end_byte())
+                .unwrap_or("");
             if text == "private" || text == "protected" {
                 return true;
             }

@@ -12,8 +12,14 @@ fn fixture(name: &str) -> PathBuf {
 #[test]
 fn keeps_imports() {
     let r = read(&fixture("python/auth.py"), Level::Signatures).unwrap();
-    assert!(r.content.contains("import hashlib"), "missing hashlib import");
-    assert!(r.content.contains("import secrets"), "missing secrets import");
+    assert!(
+        r.content.contains("import hashlib"),
+        "missing hashlib import"
+    );
+    assert!(
+        r.content.contains("import secrets"),
+        "missing secrets import"
+    );
     assert!(
         r.content.contains("from dataclasses import dataclass"),
         "missing dataclass import"
@@ -60,13 +66,19 @@ fn keeps_classes_with_method_signatures() {
         "missing User.check_password"
     );
     assert!(r.content.contains("def issue"), "missing TokenStore.issue");
-    assert!(r.content.contains("def verify"), "missing TokenStore.verify");
+    assert!(
+        r.content.contains("def verify"),
+        "missing TokenStore.verify"
+    );
 }
 
 #[test]
 fn keeps_decorators_on_classes() {
     let r = read(&fixture("python/auth.py"), Level::Signatures).unwrap();
-    assert!(r.content.contains("@dataclass"), "missing @dataclass decorator");
+    assert!(
+        r.content.contains("@dataclass"),
+        "missing @dataclass decorator"
+    );
 }
 
 #[test]
@@ -114,7 +126,10 @@ fn signatures_smaller_than_full_on_small_file() {
 #[test]
 fn reports_hidden_ranges() {
     let r = read(&fixture("python/auth.py"), Level::Signatures).unwrap();
-    assert!(!r.hidden_ranges.is_empty(), "expected at least one hidden range");
+    assert!(
+        !r.hidden_ranges.is_empty(),
+        "expected at least one hidden range"
+    );
     for (start, end) in &r.hidden_ranges {
         assert!(
             end > start,
@@ -130,8 +145,14 @@ fn emits_symbols_with_kinds() {
     assert!(names.contains(&"User"), "missing symbol User");
     assert!(names.contains(&"TokenStore"), "missing symbol TokenStore");
     assert!(names.contains(&"login"), "missing symbol login");
-    assert!(names.contains(&"verify_token"), "missing symbol verify_token");
-    assert!(names.contains(&"check_password"), "missing symbol check_password");
+    assert!(
+        names.contains(&"verify_token"),
+        "missing symbol verify_token"
+    );
+    assert!(
+        names.contains(&"check_password"),
+        "missing symbol check_password"
+    );
     assert!(names.contains(&"issue"), "missing symbol issue");
 
     let user = r.symbols.iter().find(|s| s.name == "User").unwrap();
@@ -140,7 +161,11 @@ fn emits_symbols_with_kinds() {
     let login = r.symbols.iter().find(|s| s.name == "login").unwrap();
     assert_eq!(login.kind, SymbolKind::Function);
 
-    let check_pw = r.symbols.iter().find(|s| s.name == "check_password").unwrap();
+    let check_pw = r
+        .symbols
+        .iter()
+        .find(|s| s.name == "check_password")
+        .unwrap();
     assert_eq!(check_pw.kind, SymbolKind::Method);
 }
 
@@ -174,7 +199,10 @@ fn output_remains_valid_python_syntactically() {
     let r = read(&fixture("python/auth.py"), Level::Signatures).unwrap();
     for line in r.content.lines() {
         let trimmed = line.trim_start();
-        if trimmed.starts_with("def ") || trimmed.starts_with("async def ") || trimmed.starts_with("class ") {
+        if trimmed.starts_with("def ")
+            || trimmed.starts_with("async def ")
+            || trimmed.starts_with("class ")
+        {
             assert!(
                 line.trim_end().ends_with(':') || line.contains("->"),
                 "header line missing colon: {line:?}"
