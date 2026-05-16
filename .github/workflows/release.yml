@@ -264,15 +264,17 @@ jobs:
             }
           done
 
-      - name: Publish main codefold package
+      - name: Publish main @maxenceleguery/codefold package
         working-directory: bindings/node
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          NAME=$(jq -r .name package.json)
+          VERSION=$(jq -r .version package.json)
           npm publish --access public --provenance || {
             code=$?
-            if npm view "codefold@$(jq -r .version package.json)" >/dev/null 2>&1; then
-              echo "(already published, skipping)"
+            if npm view "${NAME}@${VERSION}" >/dev/null 2>&1; then
+              echo "(${NAME}@${VERSION} already published, skipping)"
             else
               exit $code
             fi

@@ -1,14 +1,18 @@
-# codefold (Node.js)
+# @maxenceleguery/codefold (Node.js)
 
-[![npm](https://img.shields.io/npm/v/codefold)](https://www.npmjs.com/package/codefold)
+[![npm](https://img.shields.io/npm/v/@maxenceleguery/codefold)](https://www.npmjs.com/package/@maxenceleguery/codefold)
 
 Node.js bindings for [codefold](https://github.com/maxenceleguery/codefold) —
 structural code reader for LLM agents.
 
+The unscoped name `codefold` was blocked by npm as too similar to an existing
+`code-fold` package, so this lives under the maintainer's user scope. The
+per-platform native sub-packages are unscoped (`codefold-linux-x64-gnu`, etc.).
+
 ## Install
 
 ```sh
-npm install codefold
+npm install @maxenceleguery/codefold
 ```
 
 Prebuilt binaries are shipped for:
@@ -22,7 +26,7 @@ npm picks the right sub-package automatically based on your platform.
 ## Use
 
 ```js
-import { read } from "codefold";
+import { read } from "@maxenceleguery/codefold";
 
 const r = read("src/auth.py", "signatures");
 console.log(r.content);

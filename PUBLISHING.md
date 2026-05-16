@@ -37,9 +37,14 @@ PyPI Trusted Publishing also works for first-time publishing — no manual `twin
 
 ### 3. npm publishing
 
-The Node binding ships as `codefold` (unscoped) plus five per-platform sub-packages
-(`codefold-linux-x64-gnu`, `codefold-linux-arm64-gnu`, `codefold-darwin-x64`,
-`codefold-darwin-arm64`, `codefold-win32-x64-msvc`).
+The Node binding ships as **`@maxenceleguery/codefold`** (scoped to the
+maintainer's npm user — the unscoped `codefold` is blocked by npm as too
+similar to an existing `code-fold`) plus five **unscoped** per-platform
+sub-packages: `codefold-linux-x64-gnu`, `codefold-linux-arm64-gnu`,
+`codefold-darwin-x64`, `codefold-darwin-arm64`, `codefold-win32-x64-msvc`.
+
+A scoped main package can depend on unscoped sub-packages without issue;
+npm picks the right sub-package via `os` / `cpu` / `libc` matchers.
 
 npm doesn't yet have Trusted Publishing as broadly usable as crates.io / PyPI, so
 this lane uses a classic token.

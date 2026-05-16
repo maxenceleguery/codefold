@@ -45,13 +45,16 @@ uv add codefold
 **Node.js** (prebuilt binaries for Linux/macOS/Windows):
 
 ```sh
-npm install codefold
+npm install @maxenceleguery/codefold
 ```
 
 ```js
-import { read } from "codefold";
+import { read } from "@maxenceleguery/codefold";
 const r = read("src/auth.py", "signatures");
 ```
+
+The bare `codefold` name on npm was blocked as too similar to an existing
+`code-fold`; the package lives under the maintainer's user scope.
 
 ## Use
 
