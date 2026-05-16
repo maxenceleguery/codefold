@@ -1,6 +1,6 @@
 {
-  "name": "@codefold/node",
-  "version": "0.6.0",
+  "name": "codefold",
+  "version": "0.7.0",
   "description": "Structural code reader for LLM agents — Read, with zoom levels.",
   "keywords": [
     "llm",

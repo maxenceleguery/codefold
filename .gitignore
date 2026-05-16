@@ -27,7 +27,8 @@ node_modules/
 *.node
 bindings/node/index.js
 bindings/node/index.d.ts
-bindings/node/npm/
+# Keep bindings/node/npm/<triple>/ structure tracked; the .node binaries
+# inside are ignored via the `*.node` rule above.
 
 # insta pending snapshots
 **/*.snap.new

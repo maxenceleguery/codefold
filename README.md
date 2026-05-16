@@ -42,13 +42,15 @@ pip install codefold
 uv add codefold
 ```
 
-**Node** (build from source for now; prebuilt npm packages coming in v0.7.0):
+**Node.js** (prebuilt binaries for Linux/macOS/Windows):
 
 ```sh
-cd bindings/node
-npm install
-npm run build
-node -e 'import("./index.js").then(m => console.log(m.read("../../crates/codefold-core/tests/fixtures/python/auth.py").content))'
+npm install codefold
+```
+
+```js
+import { read } from "codefold";
+const r = read("src/auth.py", "signatures");
 ```
 
 ## Use
@@ -109,10 +111,11 @@ If you're building an agent framework or a code-aware tool and you need granular
 
 ## Status
 
-Early. v0.6.0. Python, TypeScript, Rust, Go. API is not yet stable.
+Early. v0.7.0. Python, TypeScript, Rust, Go. API is not yet stable.
 
 ### Changelog
 
+- **0.7.0** — npm publish pipeline. `codefold` on npm with prebuilt binaries for Linux x86_64/aarch64, macOS x86_64/arm64, Windows x64. Uses napi-rs's per-platform sub-package pattern with provenance.
 - **0.6.0** — Publishing pipeline: `codefold-core` and `codefold-cli` to crates.io, `codefold` (Python wheel) to PyPI via Trusted Publishing on tag pushes. Node.js binding (`@codefold/node`) scaffolded with napi-rs; npm publishing pipeline arrives in v0.7.0. MSRV bumped to 1.77 (napi-rs requirement).
 - **0.5.1** — Fix Windows CI: the Go newline regression test asserted on `\n` directly, which broke when Windows checked out the fixture as CRLF. Switched to `.lines()` and added `.gitattributes` forcing LF.
 - **0.5.0** — Go language support (`.go`). Public = uppercase-first identifier. Fixed gap rendering for grammars (like Go) that expose statement terminators as anonymous siblings.

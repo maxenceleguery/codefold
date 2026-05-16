@@ -1,0 +1,37 @@
+{
+  "name": "codefold-linux-x64-gnu",
+  "version": "0.7.0",
+  "cpu": [
+    "x64"
+  ],
+  "main": "codefold.linux-x64-gnu.node",
+  "files": [
+    "codefold.linux-x64-gnu.node"
+  ],
+  "description": "Structural code reader for LLM agents — Read, with zoom levels.",
+  "keywords": [
+    "llm",
+    "ai",
+    "code",
+    "parser",
+    "tree-sitter",
+    "napi"
+  ],
+  "author": "maxenceleguery <maxence.leguery@gmail.com>",
+  "homepage": "https://codefold.maxenceleguery.net",
+  "license": "MIT",
+  "engines": {
+    "node": ">= 18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maxenceleguery/codefold.git",
+    "directory": "bindings/node"
+  },
+  "os": [
+    "linux"
+  ],
+  "libc": [
+    "glibc"
+  ]
+}

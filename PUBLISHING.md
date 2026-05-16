@@ -35,9 +35,25 @@ Status: GA on crates.io as of late 2025.
 
 PyPI Trusted Publishing also works for first-time publishing — no manual `twine upload` needed first.
 
-### 3. (Later) npm publishing — v0.7.0
+### 3. npm publishing
 
-The `@codefold/node` package isn't published yet. Setup will be documented here when the v0.7.0 release workflow lands.
+The Node binding ships as `codefold` (unscoped) plus five per-platform sub-packages
+(`codefold-linux-x64-gnu`, `codefold-linux-arm64-gnu`, `codefold-darwin-x64`,
+`codefold-darwin-arm64`, `codefold-win32-x64-msvc`).
+
+npm doesn't yet have Trusted Publishing as broadly usable as crates.io / PyPI, so
+this lane uses a classic token.
+
+1. Log in to <https://www.npmjs.com/settings/maxenceleguery/tokens>.
+2. Generate a new **Automation** (or **Granular Access**) token with publish rights for the `codefold` package and the per-platform sub-packages.
+3. Add it to GitHub: <https://github.com/maxenceleguery/codefold/settings/secrets/actions/new>
+   - **Name:** `NPM_TOKEN`
+   - **Value:** the token
+
+The first publish of an unscoped name claims it on npm — you become the sole owner of `codefold` (and the sub-packages will be created on first publish too).
+
+`npm publish` also runs with `--provenance` (signed via GitHub OIDC), so consumers
+can verify the build came from this repo + workflow.
 
 ## First publish
 
