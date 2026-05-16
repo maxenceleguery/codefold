@@ -32,10 +32,13 @@ jobs:
           echo "version=$V" >> "$GITHUB_OUTPUT"
           echo "Workspace version: $V"
 
+      # crates.io rejects requests without a User-Agent (403). Always send one.
       - name: Check if codefold-core@${{ steps.ver.outputs.version }} is already on crates.io
         id: core_published
         run: |
-          if curl -sfo /dev/null -H "Accept: application/json" \
+          if curl -sfo /dev/null \
+              -H "Accept: application/json" \
+              -H "User-Agent: codefold-release-workflow (github.com/maxenceleguery/codefold)" \
               "https://crates.io/api/v1/crates/codefold-core/${{ steps.ver.outputs.version }}"; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "codefold-core@${{ steps.ver.outputs.version }} already published"
@@ -46,7 +49,9 @@ jobs:
       - name: Check if codefold-cli@${{ steps.ver.outputs.version }} is already on crates.io
         id: cli_published
         run: |
-          if curl -sfo /dev/null -H "Accept: application/json" \
+          if curl -sfo /dev/null \
+              -H "Accept: application/json" \
+              -H "User-Agent: codefold-release-workflow (github.com/maxenceleguery/codefold)" \
               "https://crates.io/api/v1/crates/codefold-cli/${{ steps.ver.outputs.version }}"; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "codefold-cli@${{ steps.ver.outputs.version }} already published"
