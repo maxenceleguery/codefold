@@ -94,9 +94,11 @@ fn preserves_newlines_between_top_level_declarations() {
         !r.content.contains("authimport"),
         "newline between package and import was lost"
     );
+    // `lines()` strips both \n and \r\n, so this is line-ending agnostic
+    // (Windows CI checks out fixtures as CRLF by default).
     assert!(
-        r.content.contains("package auth\n"),
-        "package clause should end with a newline"
+        r.content.lines().any(|line| line.trim_end() == "package auth"),
+        "package clause should appear as its own line"
     );
     // No top-level decl should immediately follow `}` without a newline.
     for line in r.content.lines() {

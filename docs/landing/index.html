@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>codefold — Read, with zoom levels</title>
+    <meta
+      name="description"
+      content="codefold is a structural code reader for LLM agents. A pure library that returns a chosen level of detail for a single file — signatures, public surface, top-level bodies, or full — instead of dumping the whole file into context."
+    />
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta property="og:title" content="codefold — Read, with zoom levels" />
+    <meta
+      property="og:description"
+      content="Structural code reader for LLM agents. Python, TypeScript, Rust, Go."
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      :root {
+        --bg: #0a0a0a;
+        --fg: #ededed;
+        --muted: #9a9a9a;
+        --accent: #ffe066;
+        --border: #2a2a2a;
+        --code-bg: #141414;
+        --max: 760px;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+          Roboto, sans-serif;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+        border-bottom: 1px dashed transparent;
+      }
+      a:hover {
+        border-bottom-color: var(--accent);
+      }
+      main {
+        max-width: var(--max);
+        margin: 0 auto;
+        padding: 64px 20px 80px;
+      }
+      header h1 {
+        font: 700 38px/1.1 ui-monospace, SFMono-Regular, Menlo, Consolas,
+          monospace;
+        letter-spacing: -0.02em;
+        margin: 0 0 8px;
+      }
+      header .tag {
+        color: var(--muted);
+        font-size: 18px;
+        margin: 0 0 12px;
+      }
+      header .meta {
+        color: var(--muted);
+        font-size: 14px;
+        margin: 0 0 32px;
+      }
+      header .meta a {
+        margin-right: 12px;
+      }
+      h2 {
+        font: 700 18px/1.3 ui-sans-serif, system-ui, sans-serif;
+        margin: 40px 0 12px;
+        letter-spacing: -0.01em;
+      }
+      p {
+        margin: 0 0 16px;
+      }
+      code,
+      pre {
+        font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      code {
+        background: var(--code-bg);
+        padding: 1px 6px;
+        border-radius: 3px;
+        border: 1px solid var(--border);
+      }
+      pre {
+        background: var(--code-bg);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 12px 16px;
+        overflow-x: auto;
+        margin: 0 0 16px;
+      }
+      pre code {
+        background: transparent;
+        padding: 0;
+        border: 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 0 16px;
+        font-size: 14px;
+      }
+      th,
+      td {
+        padding: 8px 10px;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+      td.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      .save {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      ul {
+        margin: 0 0 16px;
+        padding-left: 22px;
+      }
+      li {
+        margin: 4px 0;
+      }
+      .pill {
+        display: inline-block;
+        font-size: 12px;
+        background: var(--code-bg);
+        border: 1px solid var(--border);
+        border-radius: 99px;
+        padding: 2px 10px;
+        margin: 0 4px 4px 0;
+        color: var(--muted);
+      }
+      footer {
+        margin-top: 48px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+        font-size: 13px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>codefold</h1>
+        <p class="tag"><code>Read</code>, with zoom levels.</p>
+        <p class="meta">
+          <a href="https://github.com/maxenceleguery/codefold"
+            >github.com/maxenceleguery/codefold</a
+          >
+          <span>·</span>
+          <a
+            href="https://github.com/maxenceleguery/codefold/releases/latest"
+            >latest release</a
+          >
+          <span>·</span>
+          <a href="https://github.com/maxenceleguery/codefold/blob/main/LICENSE"
+            >MIT</a
+          >
+        </p>
+
+        <p>
+          A structural code reader for LLM agents. Hand it a file and a zoom
+          level — it gives you back the slice of the file the model actually
+          needs to see, instead of dumping the whole file into context.
+        </p>
+
+        <p>
+          <span class="pill">Python</span> <span class="pill">TypeScript</span>
+          <span class="pill">Rust</span> <span class="pill">Go</span>
+        </p>
+      </header>
+
+      <h2>Compression on real fixtures</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>File</th>
+            <th class="num">Full</th>
+            <th class="num">Signatures</th>
+            <th class="num">Saving</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>auth.py</code> (90 LOC)</td>
+            <td class="num">474 tok</td>
+            <td class="num">320 tok</td>
+            <td class="num save">−32%</td>
+          </tr>
+          <tr>
+            <td><code>heavy.py</code> (110 LOC, body-heavy)</td>
+            <td class="num">809 tok</td>
+            <td class="num">212 tok</td>
+            <td class="num save">−74%</td>
+          </tr>
+          <tr>
+            <td><code>auth.ts</code> (75 LOC)</td>
+            <td class="num">468 tok</td>
+            <td class="num">324 tok</td>
+            <td class="num save">−31%</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        On real-world service files over 500 lines, expect 70–90% token
+        reductions at <code>signatures</code> level.
+      </p>
+
+      <h2>CLI</h2>
+      <pre><code>codefold src/auth.py --level signatures
+codefold src/auth.py --level bodies --focus login,verify_token
+codefold src/handlers.ts --level public --stats</code></pre>
+
+      <h2>Python</h2>
+      <pre><code>import codefold
+
+r = codefold.read("src/auth.py", level="signatures")
+print(r.content)
+print(f"~{r.tokens_est} tokens, {len(r.symbols)} symbols, {r.language}")
+
+# With focus
+r = codefold.read("src/auth.py", level="signatures",
+                  focus=["login", "verify_token"])</code></pre>
+
+      <h2>Rust</h2>
+      <pre><code>use codefold_core::{read, read_opts, Level, Options};
+
+let r = read("src/auth.py".as_ref(), Level::Signatures)?;
+let opts = Options::new(Level::Signatures).focus(["login"]);
+let r = read_opts("src/auth.py".as_ref(), opts)?;</code></pre>
+
+      <h2>Levels</h2>
+      <ul>
+        <li>
+          <code>full</code> — the file verbatim. For API symmetry.
+        </li>
+        <li>
+          <code>signatures</code> — imports, top-level constants, function /
+          class signatures, docstring summaries. Bodies replaced with
+          <code>...</code>.
+        </li>
+        <li>
+          <code>public</code> — like <code>signatures</code>, but only
+          public-by-convention symbols (Python: not <code>_</code>-prefixed;
+          TypeScript: <code>export</code>ed; Rust: <code>pub</code>; Go:
+          uppercase-first).
+        </li>
+        <li>
+          <code>bodies</code> — top-level &amp; class-method bodies in full;
+          nested function bodies collapsed.
+        </li>
+      </ul>
+
+      <h2>Positioning</h2>
+      <p>
+        The agent-tooling space is busy. codefold's niche: a stateless,
+        embeddable <em>primitive</em> — not a CLI middleware
+        (<a href="https://github.com/dean0x/skim">skim</a>) and not a whole-repo
+        knowledge graph
+        (<a href="https://github.com/DeusData/codebase-memory-mcp"
+          >codebase-memory-mcp</a
+        >). If you're building an agent framework or a code-aware tool and you
+        need granular single-file reads, codefold drops in as a library.
+      </p>
+
+      <h2>Install</h2>
+      <pre><code># CLI
+cargo install --git https://github.com/maxenceleguery/codefold codefold-cli
+
+# Python (Rust toolchain required at build time)
+uv venv && source .venv/bin/activate
+uv pip install maturin
+uv run maturin develop --release --manifest-path codefold/bindings/python/Cargo.toml</code></pre>
+
+      <p>
+        Binary wheels on PyPI and a published crate on crates.io are on the
+        roadmap.
+      </p>
+
+      <footer>
+        <p>
+          codefold is built by
+          <a href="https://maxenceleguery.net">maxenceleguery</a>. MIT-licensed.
+          Source on
+          <a href="https://github.com/maxenceleguery/codefold">GitHub</a>.
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

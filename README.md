@@ -96,10 +96,11 @@ If you're building an agent framework or a code-aware tool and you need granular
 
 ## Status
 
-Early. v0.5.0. Python, TypeScript, Rust, Go. API is not yet stable.
+Early. v0.5.1. Python, TypeScript, Rust, Go. API is not yet stable.
 
 ### Changelog
 
+- **0.5.1** — Fix Windows CI: the Go newline regression test asserted on `\n` directly, which broke when Windows checked out the fixture as CRLF. Switched to `.lines()` and added `.gitattributes` forcing LF.
 - **0.5.0** — Go language support (`.go`). Public = uppercase-first identifier. Fixed gap rendering for grammars (like Go) that expose statement terminators as anonymous siblings.
 - **0.4.0** — Python bindings via PyO3 + maturin (`import codefold`). Pinned CI clippy to a known-good toolchain.
 - **0.3.0** — Rust language support (`.rs`). `pub` filter at Public level; trait-impl methods kept regardless of `pub`. GitHub Actions CI on Linux/macOS/Windows.

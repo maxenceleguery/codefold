@@ -1,0 +1,18 @@
+# Force LF line endings for all text files. Test fixtures are sliced into
+# rendered output and compared by content — CRLF on Windows checkouts would
+# make line-ending-sensitive assertions flaky.
+* text=auto eol=lf
+
+# Mark known binary types so git doesn't try to normalize them.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.so binary
+*.dylib binary
+*.dll binary
