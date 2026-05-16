@@ -24,11 +24,43 @@ jobs:
       # Exchange the GitHub OIDC token for a short-lived crates.io token.
       # Requires that the user has configured a Trusted Publisher for this
       # repo + workflow on crates.io (one-time, on the registry).
+      - name: Resolve workspace version
+        id: ver
+        run: |
+          V=$(cargo metadata --format-version=1 --no-deps \
+              | jq -r '.packages[] | select(.name == "codefold-core") | .version')
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Workspace version: $V"
+
+      - name: Check if codefold-core@${{ steps.ver.outputs.version }} is already on crates.io
+        id: core_published
+        run: |
+          if curl -sfo /dev/null -H "Accept: application/json" \
+              "https://crates.io/api/v1/crates/codefold-core/${{ steps.ver.outputs.version }}"; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "codefold-core@${{ steps.ver.outputs.version }} already published"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check if codefold-cli@${{ steps.ver.outputs.version }} is already on crates.io
+        id: cli_published
+        run: |
+          if curl -sfo /dev/null -H "Accept: application/json" \
+              "https://crates.io/api/v1/crates/codefold-cli/${{ steps.ver.outputs.version }}"; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "codefold-cli@${{ steps.ver.outputs.version }} already published"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Authenticate with crates.io (Trusted Publishing)
+        if: steps.core_published.outputs.skip == 'false' || steps.cli_published.outputs.skip == 'false'
         id: auth
         uses: rust-lang/crates-io-auth-action@v1
 
       - name: Publish codefold-core
+        if: steps.core_published.outputs.skip == 'false'
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
         run: cargo publish -p codefold-core --no-verify
@@ -36,9 +68,11 @@ jobs:
       # crates.io needs a moment to make the just-uploaded version visible
       # to the resolver before codefold-cli can depend on it.
       - name: Wait for crates.io to surface codefold-core
+        if: steps.core_published.outputs.skip == 'false'
         run: sleep 45
 
       - name: Publish codefold-cli
+        if: steps.cli_published.outputs.skip == 'false'
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
         run: cargo publish -p codefold-cli --no-verify
