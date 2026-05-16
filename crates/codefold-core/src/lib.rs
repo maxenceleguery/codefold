@@ -5,6 +5,8 @@
 pub mod error;
 mod language;
 mod level;
+mod parse;
+mod python;
 mod result;
 
 pub use error::Error;
@@ -25,16 +27,27 @@ pub fn read(path: &Path, level: Level) -> Result<FoldResult> {
         source,
     })?;
 
-    match level {
-        Level::Full => Ok(FoldResult {
+    match (language, level) {
+        (_, Level::Full) => Ok(FoldResult {
             content: source,
             symbols: Vec::new(),
             hidden_ranges: Vec::new(),
             language: language.name().to_string(),
         }),
-        Level::Signatures | Level::Bodies => {
-            // Implemented in upcoming TDD steps.
-            unimplemented!("level {level:?} not yet implemented")
+        (Language::Python, Level::Signatures) => {
+            let tree = parse::parse(language, &source).map_err(|_| Error::Parse {
+                path: path.into(),
+            })?;
+            let out = python::render_signatures(&source, &tree);
+            Ok(FoldResult {
+                content: out.content,
+                symbols: out.symbols,
+                hidden_ranges: out.hidden_ranges,
+                language: language.name().to_string(),
+            })
+        }
+        (Language::Python, Level::Bodies) => {
+            unimplemented!("Bodies level not yet implemented")
         }
     }
 }
