@@ -97,7 +97,9 @@ fn preserves_newlines_between_top_level_declarations() {
     // `lines()` strips both \n and \r\n, so this is line-ending agnostic
     // (Windows CI checks out fixtures as CRLF by default).
     assert!(
-        r.content.lines().any(|line| line.trim_end() == "package auth"),
+        r.content
+            .lines()
+            .any(|line| line.trim_end() == "package auth"),
         "package clause should appear as its own line"
     );
     // No top-level decl should immediately follow `}` without a newline.

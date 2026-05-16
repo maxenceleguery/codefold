@@ -17,7 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      # Pin rustfmt to a known-good toolchain. New rustfmt releases occasionally
+      # reflow whitespace, which would fail check-mode here without any code
+      # change. Bump this deliberately when ready.
+      - uses: dtolnay/rust-toolchain@1.94.0
         with:
           components: rustfmt
       - run: cargo fmt --all -- --check
