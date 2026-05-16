@@ -145,6 +145,27 @@ fn emits_symbols_with_kinds() {
 }
 
 #[test]
+fn body_placeholder_indented_at_body_column() {
+    let r = read(&fixture("python/auth.py"), Level::Signatures).unwrap();
+    // Top-level function bodies → `...` at column 4.
+    assert!(
+        r.content.contains("\n    ..."),
+        "top-level body placeholder should be indented 4 spaces"
+    );
+    // Class method bodies → `...` at column 8.
+    assert!(
+        r.content.contains("\n        ..."),
+        "method body placeholder should be indented 8 spaces"
+    );
+    // And no orphan `...` at column 0 immediately after a closing docstring or signature.
+    for line in r.content.lines() {
+        if line == "..." {
+            panic!("unindented `...` placeholder found in output");
+        }
+    }
+}
+
+#[test]
 fn output_remains_valid_python_syntactically() {
     // The rendered view should still be parseable Python. We don't fully verify
     // here (would require a Python interpreter) but at minimum we check that

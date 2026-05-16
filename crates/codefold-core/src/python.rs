@@ -365,15 +365,10 @@ fn collect_outermost_nested_fn_bodies<'a>(node: Node<'a>, out: &mut Vec<Node<'a>
     }
 }
 
-fn indent_of_first_line(source: &str, body: &Node) -> usize {
-    let text = source.get(body.start_byte()..body.end_byte()).unwrap_or("");
-    for line in text.lines() {
-        if line.trim().is_empty() {
-            continue;
-        }
-        return line.len() - line.trim_start().len();
-    }
-    4
+fn indent_of_first_line(_source: &str, body: &Node) -> usize {
+    // tree-sitter `block` nodes start at the first non-whitespace character of
+    // the first statement. Its column is the body's indent.
+    body.start_position().column
 }
 
 /// Compress a Python docstring node's raw text to its first non-empty line,
