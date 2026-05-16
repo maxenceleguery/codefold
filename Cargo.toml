@@ -21,3 +21,4 @@ thiserror = "1"
 tiktoken-rs = "0.6"
 once_cell = "1"
 insta = { version = "1", features = ["yaml"] }
+criterion = { version = "0.5", features = ["html_reports"] }
