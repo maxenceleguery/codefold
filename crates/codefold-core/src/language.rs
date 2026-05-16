@@ -6,12 +6,14 @@ use crate::Error;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Language {
     Python,
+    TypeScript,
 }
 
 impl Language {
     pub fn name(self) -> &'static str {
         match self {
             Language::Python => "python",
+            Language::TypeScript => "typescript",
         }
     }
 
@@ -22,6 +24,7 @@ impl Language {
             .unwrap_or("");
         match ext {
             "py" | "pyi" => Ok(Language::Python),
+            "ts" => Ok(Language::TypeScript),
             other => Err(Error::UnsupportedLanguage(other.to_string())),
         }
     }
