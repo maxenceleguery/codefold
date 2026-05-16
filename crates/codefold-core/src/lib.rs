@@ -6,6 +6,7 @@ pub mod error;
 mod go;
 mod language;
 mod level;
+mod markdown;
 mod options;
 mod parse;
 mod python;
@@ -37,11 +38,21 @@ pub fn read_opts(path: &Path, opts: Options) -> Result<FoldResult> {
         path: path.into(),
         source,
     })?;
+    render_source(&source, language, opts)
+}
 
+/// Render an already-loaded source string. Useful when the source comes from
+/// stdin, a network, or any non-file origin — the caller supplies the language
+/// explicitly since extension-detection isn't available.
+pub fn read_source(source: &str, language: Language, opts: Options) -> Result<FoldResult> {
+    render_source(source, language, opts)
+}
+
+fn render_source(source: &str, language: Language, opts: Options) -> Result<FoldResult> {
     if opts.level == Level::Full {
-        let tokens_est = tokens::estimate(&source);
+        let tokens_est = tokens::estimate(source);
         return Ok(FoldResult {
-            content: source,
+            content: source.to_string(),
             symbols: Vec::new(),
             hidden_ranges: Vec::new(),
             language: language.name().to_string(),
@@ -49,25 +60,42 @@ pub fn read_opts(path: &Path, opts: Options) -> Result<FoldResult> {
         });
     }
 
-    let tree = parse::parse(language, &source).map_err(|_| Error::Parse { path: path.into() })?;
+    // Markdown doesn't go through tree-sitter (different grammar ecosystem);
+    // dispatch directly to its renderer.
+    if let Language::Markdown = language {
+        let out = markdown::render(source, opts.level);
+        let tokens_est = tokens::estimate(&out.content);
+        return Ok(FoldResult {
+            content: out.content,
+            symbols: out.symbols,
+            hidden_ranges: out.hidden_ranges,
+            language: language.name().to_string(),
+            tokens_est,
+        });
+    }
+
+    let tree = parse::parse(language, source).map_err(|_| Error::Parse {
+        path: Default::default(),
+    })?;
 
     let (content, symbols, hidden_ranges) = match language {
         Language::Python => {
-            let out = python::render(&source, &tree, opts.level, &opts.focus);
+            let out = python::render(source, &tree, opts.level, &opts.focus);
             (out.content, out.symbols, out.hidden_ranges)
         }
         Language::TypeScript | Language::TypeScriptTsx => {
-            let out = typescript::render(&source, &tree, opts.level, &opts.focus);
+            let out = typescript::render(source, &tree, opts.level, &opts.focus);
             (out.content, out.symbols, out.hidden_ranges)
         }
         Language::Rust => {
-            let out = rust::render(&source, &tree, opts.level, &opts.focus);
+            let out = rust::render(source, &tree, opts.level, &opts.focus);
             (out.content, out.symbols, out.hidden_ranges)
         }
         Language::Go => {
-            let out = go::render(&source, &tree, opts.level, &opts.focus);
+            let out = go::render(source, &tree, opts.level, &opts.focus);
             (out.content, out.symbols, out.hidden_ranges)
         }
+        Language::Markdown => unreachable!("markdown is handled before parse::parse"),
     };
 
     let tokens_est = tokens::estimate(&content);
