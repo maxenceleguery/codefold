@@ -1,5 +1,5 @@
 {
-  "name": "codefold-darwin-arm64",
+  "name": "@maxenceleguery/codefold-darwin-arm64",
   "version": "0.7.0",
   "cpu": [
     "arm64"

@@ -1,5 +1,5 @@
 {
-  "name": "codefold-linux-arm64-gnu",
+  "name": "@maxenceleguery/codefold-linux-arm64-gnu",
   "version": "0.7.0",
   "cpu": [
     "arm64"

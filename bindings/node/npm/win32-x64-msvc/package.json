@@ -1,5 +1,5 @@
 {
-  "name": "codefold-win32-x64-msvc",
+  "name": "@maxenceleguery/codefold-win32-x64-msvc",
   "version": "0.7.0",
   "cpu": [
     "x64"
