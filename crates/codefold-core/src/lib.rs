@@ -3,6 +3,7 @@
 //! `Read`, with zoom levels.
 
 pub mod error;
+mod go;
 mod language;
 mod level;
 mod options;
@@ -61,6 +62,10 @@ pub fn read_opts(path: &Path, opts: Options) -> Result<FoldResult> {
         }
         Language::Rust => {
             let out = rust::render(&source, &tree, opts.level, &opts.focus);
+            (out.content, out.symbols, out.hidden_ranges)
+        }
+        Language::Go => {
+            let out = go::render(&source, &tree, opts.level, &opts.focus);
             (out.content, out.symbols, out.hidden_ranges)
         }
     };

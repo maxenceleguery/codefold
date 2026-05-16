@@ -8,6 +8,7 @@ pub enum Language {
     Python,
     TypeScript,
     Rust,
+    Go,
 }
 
 impl Language {
@@ -16,6 +17,7 @@ impl Language {
             Language::Python => "python",
             Language::TypeScript => "typescript",
             Language::Rust => "rust",
+            Language::Go => "go",
         }
     }
 
@@ -25,6 +27,7 @@ impl Language {
             "py" | "pyi" => Ok(Language::Python),
             "ts" => Ok(Language::TypeScript),
             "rs" => Ok(Language::Rust),
+            "go" => Ok(Language::Go),
             other => Err(Error::UnsupportedLanguage(other.to_string())),
         }
     }

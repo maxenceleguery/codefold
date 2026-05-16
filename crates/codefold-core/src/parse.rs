@@ -8,6 +8,7 @@ pub fn parse(language: Language, source: &str) -> Result<Tree, Error> {
         Language::Python => tree_sitter_python::language(),
         Language::TypeScript => tree_sitter_typescript::language_typescript(),
         Language::Rust => tree_sitter_rust::language(),
+        Language::Go => tree_sitter_go::language(),
     };
     parser
         .set_language(&ts_language)
