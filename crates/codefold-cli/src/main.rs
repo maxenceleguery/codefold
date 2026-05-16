@@ -40,8 +40,8 @@ struct Cli {
 enum Command {
     /// Read a source file at a chosen zoom level (explicit form of the default).
     Read(ReadArgs),
-    /// Check whether a newer version of codefold-cli is available on GitHub releases.
-    Update,
+    /// Update codefold-cli to the latest release.
+    Update(update::UpdateArgs),
     /// Install codefold integration into LLM agent harnesses on this project or your user account.
     Setup(setup::SetupArgs),
 }
@@ -84,7 +84,7 @@ fn main() -> ExitCode {
     let cli = Cli::parse();
     match cli.command {
         Some(Command::Read(args)) => run_read(&args.path, args.level, args.focus, args.stats),
-        Some(Command::Update) => update::run(env!("CARGO_PKG_VERSION")),
+        Some(Command::Update(args)) => update::run(&args, env!("CARGO_PKG_VERSION")),
         Some(Command::Setup(args)) => setup::run(&args, env!("CARGO_PKG_VERSION")),
         None => match cli.path {
             Some(path) => run_read(&path, cli.level, cli.focus, cli.stats),

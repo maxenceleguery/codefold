@@ -1,33 +1,128 @@
-//! `codefold update` — check GitHub releases for a newer version.
+//! `codefold update` — check GitHub releases and (optionally) apply the upgrade.
 
-use std::process::ExitCode;
+use std::io::{IsTerminal, Write};
+use std::process::{Command, ExitCode};
 use std::time::Duration;
+
+use clap::Args;
 
 const RELEASES_URL: &str = "https://api.github.com/repos/maxenceleguery/codefold/releases/latest";
 
-pub fn run(current: &str) -> ExitCode {
-    match latest_release_tag() {
-        Ok(latest) => {
-            let latest_clean = latest.trim_start_matches('v');
-            if is_newer(latest_clean, current) {
-                println!("codefold {current} installed.");
-                println!("→ {latest} is available.");
-                println!();
-                println!("Update with one of:");
-                println!("  cargo install codefold-cli --force");
-                println!("  pip install --upgrade codefold");
-                println!("  npm i -g @maxenceleguery/codefold@latest");
-                ExitCode::SUCCESS
-            } else {
-                println!("codefold {current} is up to date.");
-                ExitCode::SUCCESS
-            }
-        }
+#[derive(Args, Debug)]
+pub struct UpdateArgs {
+    /// Only check for a newer release; do not run the upgrade.
+    #[arg(long)]
+    pub check: bool,
+
+    /// Apply the upgrade without prompting (non-interactive). Implies running
+    /// `cargo install codefold-cli --force`.
+    #[arg(short, long)]
+    pub yes: bool,
+}
+
+pub fn run(args: &UpdateArgs, current: &str) -> ExitCode {
+    let latest_tag = match latest_release_tag() {
+        Ok(t) => t,
         Err(e) => {
             eprintln!("codefold: update check failed: {e}");
+            return ExitCode::from(1);
+        }
+    };
+
+    let latest_clean = latest_tag.trim_start_matches('v');
+    if !is_newer(latest_clean, current) {
+        println!("codefold {current} is up to date.");
+        return ExitCode::SUCCESS;
+    }
+
+    println!("codefold {current} installed.");
+    println!("→ {latest_tag} is available.");
+
+    if args.check {
+        println!();
+        println!("Run `codefold update` (without --check) to upgrade.");
+        return ExitCode::SUCCESS;
+    }
+
+    // Decide whether to apply.
+    let should_apply = args.yes || prompt_yes_no(true);
+    if !should_apply {
+        println!("Skipping upgrade. To upgrade later, run: codefold update");
+        return ExitCode::SUCCESS;
+    }
+
+    apply_via_cargo()
+}
+
+fn prompt_yes_no(default_yes: bool) -> bool {
+    if !std::io::stdin().is_terminal() {
+        // Non-interactive (script, CI): never auto-apply without --yes.
+        eprintln!("(non-interactive; pass --yes to apply, --check to only check)");
+        return false;
+    }
+    let suffix = if default_yes { "[Y/n]" } else { "[y/N]" };
+    print!("Upgrade now? {suffix} ");
+    let _ = std::io::stdout().flush();
+    let mut buf = String::new();
+    if std::io::stdin().read_line(&mut buf).is_err() {
+        return false;
+    }
+    let answer = buf.trim().to_lowercase();
+    if answer.is_empty() {
+        return default_yes;
+    }
+    matches!(answer.as_str(), "y" | "yes")
+}
+
+fn apply_via_cargo() -> ExitCode {
+    // Locate cargo on PATH. If absent, the user installed via pip/npm/system
+    // package — we can't safely auto-upgrade that, so print manual commands.
+    if which_cargo().is_none() {
+        println!();
+        println!("`cargo` not found on PATH. codefold may have been installed via a different");
+        println!("package manager. Pick the matching command:");
+        println!("  cargo install codefold-cli --force");
+        println!("  pip install --upgrade codefold");
+        println!("  npm i -g @maxenceleguery/codefold@latest");
+        return ExitCode::from(1);
+    }
+
+    println!();
+    println!("$ cargo install codefold-cli --force");
+    let status = Command::new("cargo")
+        .args(["install", "codefold-cli", "--force"])
+        .status();
+    match status {
+        Ok(s) if s.success() => {
+            println!();
+            println!("codefold upgraded successfully.");
+            ExitCode::SUCCESS
+        }
+        Ok(s) => {
+            eprintln!("codefold: `cargo install` exited with status {s}");
+            ExitCode::from(1)
+        }
+        Err(e) => {
+            eprintln!("codefold: failed to spawn cargo: {e}");
             ExitCode::from(1)
         }
     }
+}
+
+fn which_cargo() -> Option<()> {
+    // Minimal PATH walk: avoid pulling in the `which` crate for one binary.
+    let path = std::env::var_os("PATH")?;
+    for dir in std::env::split_paths(&path) {
+        let cargo = if cfg!(windows) {
+            dir.join("cargo.exe")
+        } else {
+            dir.join("cargo")
+        };
+        if cargo.is_file() {
+            return Some(());
+        }
+    }
+    None
 }
 
 fn latest_release_tag() -> Result<String, String> {
@@ -60,7 +155,6 @@ fn is_newer(a: &str, b: &str) -> bool {
     }
     match (parts(a), parts(b)) {
         (Some(pa), Some(pb)) => pa > pb,
-        // Fall back to string compare so unknown shapes don't claim "newer".
         _ => a > b,
     }
 }

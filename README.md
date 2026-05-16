@@ -67,12 +67,16 @@ codefold src/handlers.ts --level signatures --stats
 ### Subcommands
 
 ```sh
-codefold update                  # check GitHub for a newer release
+codefold update                  # check + interactively upgrade via `cargo install codefold-cli --force`
+codefold update --check          # check only; don't upgrade
+codefold update --yes            # upgrade without prompting (for scripts / CI)
 codefold setup                   # install integration into agent harnesses (project scope)
 codefold setup --scope user      # install user-level (~/.claude/CLAUDE.md + skill)
 codefold setup --dry-run         # show what would change without writing
 codefold setup -H claude-code    # target a specific harness (claude-code|cursor|copilot)
 ```
+
+`update` requires `cargo` on PATH (it self-upgrades via crates.io). If you installed via `pip` or `npm`, those need to be updated separately — the CLI will print the right command if cargo isn't found.
 
 `codefold setup` writes a delimited `<!-- codefold:start --> ... <!-- codefold:end -->` block to:
 
