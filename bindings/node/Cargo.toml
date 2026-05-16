@@ -13,7 +13,7 @@ publish = false
 crate-type = ["cdylib"]
 
 [dependencies]
-codefold-core = { path = "../../crates/codefold-core", version = "0.8.0" }
+codefold-core = { path = "../../crates/codefold-core", version = "0.8.1" }
 napi = { version = "3", default-features = false, features = ["napi8"] }
 napi-derive = "3"
 

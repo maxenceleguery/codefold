@@ -201,7 +201,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-node
     permissions:
-      id-token: write # for npm provenance
+      id-token: write # for npm provenance + Trusted Publishing OIDC
       contents: read
     steps:
       - uses: actions/checkout@v4
@@ -209,6 +209,12 @@ jobs:
         with:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
+
+      # Node 20 ships npm 10.x; Trusted Publishing requires npm >= 11.5.
+      # Upgrade to latest so `npm publish --provenance` performs the OIDC
+      # auth handshake (not just provenance signing).
+      - name: Upgrade npm to latest
+        run: npm install -g npm@latest && npm --version
 
       - name: Install npm deps
         working-directory: bindings/node

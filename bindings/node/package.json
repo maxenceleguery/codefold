@@ -1,6 +1,6 @@
 {
   "name": "@maxenceleguery/codefold",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Structural code reader for LLM agents \u2014 Read, with zoom levels.",
   "keywords": [
     "llm",
@@ -46,10 +46,10 @@
     "@napi-rs/cli": "^3.0.0"
   },
   "optionalDependencies": {
-    "@maxenceleguery/codefold-linux-x64-gnu": "0.8.0",
-    "@maxenceleguery/codefold-linux-arm64-gnu": "0.8.0",
-    "@maxenceleguery/codefold-darwin-x64": "0.8.0",
-    "@maxenceleguery/codefold-darwin-arm64": "0.8.0",
-    "@maxenceleguery/codefold-win32-x64-msvc": "0.8.0"
+    "@maxenceleguery/codefold-linux-x64-gnu": "0.8.1",
+    "@maxenceleguery/codefold-linux-arm64-gnu": "0.8.1",
+    "@maxenceleguery/codefold-darwin-x64": "0.8.1",
+    "@maxenceleguery/codefold-darwin-arm64": "0.8.1",
+    "@maxenceleguery/codefold-win32-x64-msvc": "0.8.1"
   }
 }
