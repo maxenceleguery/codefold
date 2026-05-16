@@ -184,10 +184,13 @@ jobs:
 
       - name: Install npm deps
         working-directory: bindings/node
-        # `optionalDependencies` lists our own scoped sub-packages, used only at
-        # end-user install time. CI doesn't need them and can't always resolve
-        # them (a new version may not be on the registry yet during a release).
-        run: npm ci --omit=optional
+        # Using `npm install` (not `npm ci`): the package's `optionalDependencies`
+        # lists our own scoped sub-packages at the current release version, which
+        # by definition aren't on the registry yet during a release. `npm ci`
+        # would fail on the lock/package mismatch; `npm install` regenerates the
+        # lock in-memory for this run. `--omit=optional` skips actually fetching
+        # them (we don't need them in CI; consumers fetch at install time).
+        run: npm install --omit=optional --no-fund --no-audit
 
       - name: Build napi binary
         working-directory: bindings/node
@@ -221,10 +224,13 @@ jobs:
 
       - name: Install npm deps
         working-directory: bindings/node
-        # `optionalDependencies` lists our own scoped sub-packages, used only at
-        # end-user install time. CI doesn't need them and can't always resolve
-        # them (a new version may not be on the registry yet during a release).
-        run: npm ci --omit=optional
+        # Using `npm install` (not `npm ci`): the package's `optionalDependencies`
+        # lists our own scoped sub-packages at the current release version, which
+        # by definition aren't on the registry yet during a release. `npm ci`
+        # would fail on the lock/package mismatch; `npm install` regenerates the
+        # lock in-memory for this run. `--omit=optional` skips actually fetching
+        # them (we don't need them in CI; consumers fetch at install time).
+        run: npm install --omit=optional --no-fund --no-audit
 
       - name: Download napi artifacts
         uses: actions/download-artifact@v4
