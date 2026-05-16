@@ -246,15 +246,17 @@ jobs:
         # main package.json so npm picks the right sub-package per platform.
         run: ./node_modules/.bin/napi pre-publish -t npm --skip-optional-publish
 
+      # npm Trusted Publishing: with `permissions: id-token: write` set on
+      # this job, `npm publish --provenance` uses GitHub OIDC to authenticate
+      # against npm. No NPM_TOKEN required. Configure the trusted publisher
+      # for each package once at https://www.npmjs.com/package/<name>/access.
+
       - name: Publish per-platform sub-packages
         working-directory: bindings/node
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           for dir in npm/*/; do
             echo "== publishing $dir =="
             (cd "$dir" && npm publish --access public --provenance) || {
-              # Tolerate "already published" so re-runs are idempotent.
               code=$?
               if npm view "$(jq -r .name "$dir/package.json")@$(jq -r .version "$dir/package.json")" >/dev/null 2>&1; then
                 echo "(already published, skipping)"
@@ -266,8 +268,6 @@ jobs:
 
       - name: Publish main @maxenceleguery/codefold package
         working-directory: bindings/node
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           NAME=$(jq -r .name package.json)
           VERSION=$(jq -r .version package.json)

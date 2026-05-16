@@ -19,7 +19,7 @@ path = "src/main.rs"
 [dependencies]
 # `version` here is what cargo publishes against. The `path` is used locally;
 # crates.io strips it and uses the version. Keep these in sync with workspace.package.version.
-codefold-core = { path = "../codefold-core", version = "0.7.0" }
+codefold-core = { path = "../codefold-core", version = "0.8.0" }
 clap = { workspace = true }
 ureq = { workspace = true }
 serde = { workspace = true }

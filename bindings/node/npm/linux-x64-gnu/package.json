@@ -1,6 +1,6 @@
 {
   "name": "@maxenceleguery/codefold-linux-x64-gnu",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "cpu": [
     "x64"
   ],
@@ -8,7 +8,7 @@
   "files": [
     "codefold.linux-x64-gnu.node"
   ],
-  "description": "Structural code reader for LLM agents — Read, with zoom levels.",
+  "description": "Structural code reader for LLM agents \u2014 Read, with zoom levels.",
   "keywords": [
     "llm",
     "ai",

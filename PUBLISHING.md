@@ -46,19 +46,26 @@ sub-packages: `codefold-linux-x64-gnu`, `codefold-linux-arm64-gnu`,
 A scoped main package can depend on unscoped sub-packages without issue;
 npm picks the right sub-package via `os` / `cpu` / `libc` matchers.
 
-npm doesn't yet have Trusted Publishing as broadly usable as crates.io / PyPI, so
-this lane uses a classic token.
+All six npm packages publish via **Trusted Publishing** (OIDC) — no `NPM_TOKEN` stored.
 
-1. Log in to <https://www.npmjs.com/settings/maxenceleguery/tokens>.
-2. Generate a new **Automation** (or **Granular Access**) token with publish rights for the `codefold` package and the per-platform sub-packages.
-3. Add it to GitHub: <https://github.com/maxenceleguery/codefold/settings/secrets/actions/new>
-   - **Name:** `NPM_TOKEN`
-   - **Value:** the token
+Configure once per package at <https://www.npmjs.com/package/&lt;name&gt;/access>
+→ **Trusted Publishers** → GitHub Actions:
 
-The first publish of an unscoped name claims it on npm — you become the sole owner of `codefold` (and the sub-packages will be created on first publish too).
+- Owner: `maxenceleguery`
+- Repository: `codefold`
+- Workflow: `release.yml`
+- Environment: (blank)
 
-`npm publish` also runs with `--provenance` (signed via GitHub OIDC), so consumers
-can verify the build came from this repo + workflow.
+The six packages:
+
+- `@maxenceleguery/codefold`
+- `@maxenceleguery/codefold-linux-x64-gnu`
+- `@maxenceleguery/codefold-linux-arm64-gnu`
+- `@maxenceleguery/codefold-darwin-x64`
+- `@maxenceleguery/codefold-darwin-arm64`
+- `@maxenceleguery/codefold-win32-x64-msvc`
+
+The first publish of v0.7.0 was bootstrapped manually (`npm login` + 6 interactive `npm publish`). From v0.8.0 onward, the workflow uses GitHub OIDC + `npm publish --provenance` — no token, no OTP, no 2FA prompts.
 
 ## First publish
 
