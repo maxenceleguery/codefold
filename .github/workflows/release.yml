@@ -184,7 +184,10 @@ jobs:
 
       - name: Install npm deps
         working-directory: bindings/node
-        run: npm ci
+        # `optionalDependencies` lists our own scoped sub-packages, used only at
+        # end-user install time. CI doesn't need them and can't always resolve
+        # them (a new version may not be on the registry yet during a release).
+        run: npm ci --omit=optional
 
       - name: Build napi binary
         working-directory: bindings/node
@@ -218,7 +221,10 @@ jobs:
 
       - name: Install npm deps
         working-directory: bindings/node
-        run: npm ci
+        # `optionalDependencies` lists our own scoped sub-packages, used only at
+        # end-user install time. CI doesn't need them and can't always resolve
+        # them (a new version may not be on the registry yet during a release).
+        run: npm ci --omit=optional
 
       - name: Download napi artifacts
         uses: actions/download-artifact@v4

@@ -142,6 +142,7 @@ Early. v0.8.1. Python, TypeScript, Rust, Go. API is not yet stable.
 
 ### Changelog
 
+- **0.8.2** — CI fix: `npm ci --omit=optional` so the publish job doesn't choke on out-of-sync lock entries for our own (not-yet-published) scoped sub-packages.
 - **0.8.1** — CI fixes: upgrade npm on the release runner to >=11.5 (needed for Trusted Publishing OIDC); make the setup test platform-agnostic on Windows.
 - **0.8.0** — `codefold update` (self-upgrade via cargo), `codefold setup` (install integration into Claude Code / Cursor / Copilot — project or user scope, idempotent block-replace, propagates to subagents). npm publish migrated to Trusted Publishing (OIDC).
 - **0.7.0** — npm publish pipeline. `codefold` on npm with prebuilt binaries for Linux x86_64/aarch64, macOS x86_64/arm64, Windows x64. Uses napi-rs's per-platform sub-package pattern with provenance.
