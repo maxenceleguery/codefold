@@ -24,6 +24,10 @@ wheels/
 
 # Node
 node_modules/
+*.node
+bindings/node/index.js
+bindings/node/index.d.ts
+bindings/node/npm/
 
 # insta pending snapshots
 **/*.snap.new

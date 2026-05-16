@@ -1,0 +1,21 @@
+[package]
+name = "codefold-node"
+description = "Node.js bindings for codefold-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+codefold-core = { path = "../../crates/codefold-core", version = "0.6.0" }
+napi = { version = "3", default-features = false, features = ["napi8"] }
+napi-derive = "3"
+
+[build-dependencies]
+napi-build = "2"

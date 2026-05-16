@@ -1,0 +1,48 @@
+{
+  "name": "@codefold/node",
+  "version": "0.6.0",
+  "description": "Structural code reader for LLM agents — Read, with zoom levels.",
+  "keywords": [
+    "llm",
+    "ai",
+    "code",
+    "parser",
+    "tree-sitter",
+    "napi"
+  ],
+  "license": "MIT",
+  "author": "maxenceleguery <maxence.leguery@gmail.com>",
+  "homepage": "https://codefold.maxenceleguery.net",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maxenceleguery/codefold.git",
+    "directory": "bindings/node"
+  },
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
+  "napi": {
+    "binaryName": "codefold",
+    "targets": [
+      "x86_64-unknown-linux-gnu",
+      "aarch64-unknown-linux-gnu",
+      "x86_64-apple-darwin",
+      "aarch64-apple-darwin",
+      "x86_64-pc-windows-msvc"
+    ]
+  },
+  "engines": {
+    "node": ">= 18"
+  },
+  "scripts": {
+    "build": "napi build --platform --release --strip",
+    "build:debug": "napi build --platform",
+    "test": "node --test 'test/**/*.test.mjs'"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^3.0.0"
+  }
+}

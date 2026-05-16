@@ -22,21 +22,34 @@ Compression scales with the body-to-signature ratio. On real-world service files
 
 ## Install
 
-CLI (Rust toolchain required):
+**CLI** (Rust toolchain required):
 
 ```sh
-cargo install --path crates/codefold-cli
+cargo install codefold-cli
 ```
 
-Python (requires Rust toolchain at install time until binary wheels are on PyPI):
+**Rust library**:
 
 ```sh
-uv venv && source .venv/bin/activate
-uv pip install maturin
-uv run maturin develop --release --manifest-path bindings/python/Cargo.toml
+cargo add codefold-core
 ```
 
-Node binding: coming.
+**Python** (prebuilt wheels for Linux/macOS/Windows):
+
+```sh
+pip install codefold
+# or with uv:
+uv add codefold
+```
+
+**Node** (build from source for now; prebuilt npm packages coming in v0.7.0):
+
+```sh
+cd bindings/node
+npm install
+npm run build
+node -e 'import("./index.js").then(m => console.log(m.read("../../crates/codefold-core/tests/fixtures/python/auth.py").content))'
+```
 
 ## Use
 
@@ -96,10 +109,11 @@ If you're building an agent framework or a code-aware tool and you need granular
 
 ## Status
 
-Early. v0.5.1. Python, TypeScript, Rust, Go. API is not yet stable.
+Early. v0.6.0. Python, TypeScript, Rust, Go. API is not yet stable.
 
 ### Changelog
 
+- **0.6.0** — Publishing pipeline: `codefold-core` and `codefold-cli` to crates.io, `codefold` (Python wheel) to PyPI via Trusted Publishing on tag pushes. Node.js binding (`@codefold/node`) scaffolded with napi-rs; npm publishing pipeline arrives in v0.7.0. MSRV bumped to 1.77 (napi-rs requirement).
 - **0.5.1** — Fix Windows CI: the Go newline regression test asserted on `\n` directly, which broke when Windows checked out the fixture as CRLF. Switched to `.lines()` and added `.gitattributes` forcing LF.
 - **0.5.0** — Go language support (`.go`). Public = uppercase-first identifier. Fixed gap rendering for grammars (like Go) that expose statement terminators as anonymous siblings.
 - **0.4.0** — Python bindings via PyO3 + maturin (`import codefold`). Pinned CI clippy to a known-good toolchain.
