@@ -17,12 +17,18 @@ pub fn render(
     level: Level,
     focus: &[String],
 ) -> RenderOutput {
-    let base_mode = match level {
-        Level::Signatures => Mode::Signatures,
-        Level::Bodies => Mode::Bodies,
-        Level::Full => Mode::Bodies, // unreachable for non-Full callers
+    let (base_mode, public_only) = match level {
+        Level::Signatures => (Mode::Signatures, false),
+        Level::Public => (Mode::Signatures, true),
+        Level::Bodies => (Mode::Bodies, false),
+        Level::Full => (Mode::Bodies, false),
     };
-    let mut r = Renderer::new(source, base_mode, focus.iter().cloned().collect());
+    let mut r = Renderer::new(
+        source,
+        base_mode,
+        public_only,
+        focus.iter().cloned().collect(),
+    );
     r.render_program(tree.root_node());
     RenderOutput {
         content: r.out,
@@ -40,20 +46,29 @@ enum Mode {
 struct Renderer<'a> {
     source: &'a str,
     base_mode: Mode,
+    public_only: bool,
     focus: HashSet<String>,
     in_focused_class: bool,
+    in_export: bool,
     out: String,
     symbols: Vec<Symbol>,
     hidden: Vec<(usize, usize)>,
 }
 
 impl<'a> Renderer<'a> {
-    fn new(source: &'a str, base_mode: Mode, focus: HashSet<String>) -> Self {
+    fn new(
+        source: &'a str,
+        base_mode: Mode,
+        public_only: bool,
+        focus: HashSet<String>,
+    ) -> Self {
         Self {
             source,
             base_mode,
+            public_only,
             focus,
             in_focused_class: false,
+            in_export: false,
             out: String::new(),
             symbols: Vec::new(),
             hidden: Vec::new(),
@@ -114,20 +129,36 @@ impl<'a> Renderer<'a> {
             | "type_alias_declaration"
             | "enum_declaration"
             | "ambient_declaration" => {
-                // Type-only declarations — keep verbatim.
-                self.emit_slice(node.start_byte(), node.end_byte());
+                // Type-only declarations. Keep when exported or not Public-filtered.
+                if self.public_only && !self.in_export {
+                    self.hide(node.start_byte(), node.end_byte());
+                } else {
+                    self.emit_slice(node.start_byte(), node.end_byte());
+                }
             }
             "lexical_declaration" | "variable_declaration" => {
-                self.emit_slice(node.start_byte(), node.end_byte());
+                if self.public_only && !self.in_export {
+                    self.hide(node.start_byte(), node.end_byte());
+                } else {
+                    self.emit_slice(node.start_byte(), node.end_byte());
+                }
             }
             "expression_statement" => {
                 self.emit_slice(node.start_byte(), node.end_byte());
             }
             "function_declaration" => {
-                self.render_function_decl(node, SymbolKind::Function);
+                if self.public_only && !self.in_export {
+                    self.hide(node.start_byte(), node.end_byte());
+                } else {
+                    self.render_function_decl(node, SymbolKind::Function);
+                }
             }
             "class_declaration" | "abstract_class_declaration" => {
-                self.render_class_decl(node);
+                if self.public_only && !self.in_export {
+                    self.hide(node.start_byte(), node.end_byte());
+                } else {
+                    self.render_class_decl(node);
+                }
             }
             "export_statement" => {
                 self.render_export_statement(node);
@@ -165,7 +196,10 @@ impl<'a> Renderer<'a> {
             Some(inner) => {
                 // Emit `export ` prefix (and any modifiers like `default`).
                 self.emit_slice(node.start_byte(), inner.start_byte());
+                let was_in_export = self.in_export;
+                self.in_export = true;
                 self.render_top_level(&inner);
+                self.in_export = was_in_export;
                 // Emit anything after the inner declaration (e.g., trailing semicolons).
                 if inner.end_byte() < node.end_byte() {
                     self.emit_slice(inner.end_byte(), node.end_byte());
@@ -284,10 +318,18 @@ impl<'a> Renderer<'a> {
             }
             match child.kind() {
                 "method_definition" => {
-                    self.render_method_def(child);
+                    if self.public_only && is_private_member(child, self.source) {
+                        self.hide(child.start_byte(), child.end_byte());
+                    } else {
+                        self.render_method_def(child);
+                    }
                 }
                 "public_field_definition" | "field_definition" => {
-                    self.emit_slice(child.start_byte(), child.end_byte());
+                    if self.public_only && is_private_member(child, self.source) {
+                        self.hide(child.start_byte(), child.end_byte());
+                    } else {
+                        self.emit_slice(child.start_byte(), child.end_byte());
+                    }
                 }
                 "comment" => {
                     self.emit_slice(child.start_byte(), child.end_byte());
@@ -326,6 +368,22 @@ impl<'a> Renderer<'a> {
         }
         self.emit_slice(cur, body.end_byte());
     }
+}
+
+/// True if a class member has an `accessibility_modifier` child marked
+/// `private`. TypeScript also has `protected`, which we treat as private for
+/// the Public level (caller asked for public surface only).
+fn is_private_member(node: &Node, source: &str) -> bool {
+    let mut cursor = node.walk();
+    for child in node.children(&mut cursor) {
+        if child.kind() == "accessibility_modifier" {
+            let text = source.get(child.start_byte()..child.end_byte()).unwrap_or("");
+            if text == "private" || text == "protected" {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 fn collect_outermost_nested_fn_bodies<'a>(node: Node<'a>, out: &mut Vec<Node<'a>>) {

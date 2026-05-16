@@ -11,12 +11,18 @@ pub fn render(
     level: Level,
     focus: &[String],
 ) -> RenderOutput {
-    let base_mode = match level {
-        Level::Signatures => Mode::Signatures,
-        Level::Bodies => Mode::Bodies,
-        Level::Full => Mode::Bodies, // unreachable for non-Full callers; Full handled upstream
+    let (base_mode, public_only) = match level {
+        Level::Signatures => (Mode::Signatures, false),
+        Level::Public => (Mode::Signatures, true),
+        Level::Bodies => (Mode::Bodies, false),
+        Level::Full => (Mode::Bodies, false), // Full handled upstream
     };
-    let mut r = Renderer::new(source, base_mode, focus.iter().cloned().collect());
+    let mut r = Renderer::new(
+        source,
+        base_mode,
+        public_only,
+        focus.iter().cloned().collect(),
+    );
     r.render_module(tree.root_node());
     RenderOutput {
         content: r.out,
@@ -31,6 +37,14 @@ enum Mode {
     Bodies,
 }
 
+/// Python convention: `_foo` is private; `__foo__` (dunder) is public-by-convention.
+fn is_public_name(name: &str) -> bool {
+    if name.is_empty() {
+        return true;
+    }
+    !name.starts_with('_') || (name.starts_with("__") && name.ends_with("__") && name.len() >= 4)
+}
+
 pub struct RenderOutput {
     pub content: String,
     pub symbols: Vec<Symbol>,
@@ -40,6 +54,7 @@ pub struct RenderOutput {
 struct Renderer<'a> {
     source: &'a str,
     base_mode: Mode,
+    public_only: bool,
     focus: HashSet<String>,
     in_focused_class: bool,
     out: String,
@@ -48,16 +63,33 @@ struct Renderer<'a> {
 }
 
 impl<'a> Renderer<'a> {
-    fn new(source: &'a str, base_mode: Mode, focus: HashSet<String>) -> Self {
+    fn new(
+        source: &'a str,
+        base_mode: Mode,
+        public_only: bool,
+        focus: HashSet<String>,
+    ) -> Self {
         Self {
             source,
             base_mode,
+            public_only,
             focus,
             in_focused_class: false,
             out: String::new(),
             symbols: Vec::new(),
             hidden: Vec::new(),
         }
+    }
+
+    fn name_of(&self, node: &Node<'a>) -> String {
+        node.child_by_field_name("name")
+            .map(|n| self.slice(n.start_byte(), n.end_byte()).to_string())
+            .unwrap_or_default()
+    }
+
+    /// In Public mode, hide non-public Python symbols.
+    fn should_skip(&self, name: &str) -> bool {
+        self.public_only && !is_public_name(name)
     }
 
     /// Effective mode for a symbol named `name`. Focus elevates Signatures → Bodies.
@@ -109,23 +141,54 @@ impl<'a> Renderer<'a> {
                 self.emit_slice(node.start_byte(), node.end_byte());
             }
             "expression_statement" => {
-                // Module-level expression (docstrings, etc.) — keep verbatim.
-                self.emit_slice(node.start_byte(), node.end_byte());
+                // Could be a docstring/expression, or an assignment wrapped by
+                // tree-sitter-python's grammar.
+                let inner = node.named_child(0);
+                let wrapped_assignment = inner
+                    .filter(|n| matches!(n.kind(), "assignment" | "augmented_assignment"));
+                if let Some(inner) = wrapped_assignment {
+                    if self.public_only && !is_public_assignment(&inner, self.source) {
+                        self.hide(node.start_byte(), node.end_byte());
+                    } else {
+                        self.emit_slice(node.start_byte(), node.end_byte());
+                    }
+                } else {
+                    self.emit_slice(node.start_byte(), node.end_byte());
+                }
             }
             "assignment" | "augmented_assignment" | "type_alias_statement" => {
-                self.emit_slice(node.start_byte(), node.end_byte());
+                if self.public_only && !is_public_assignment(node, self.source) {
+                    self.hide(node.start_byte(), node.end_byte());
+                } else {
+                    self.emit_slice(node.start_byte(), node.end_byte());
+                }
             }
             "comment" => {
                 self.emit_slice(node.start_byte(), node.end_byte());
             }
             "function_definition" => {
-                self.render_function_def(node, SymbolKind::Function);
+                let name = self.name_of(node);
+                if self.should_skip(&name) {
+                    self.hide(node.start_byte(), node.end_byte());
+                } else {
+                    self.render_function_def(node, SymbolKind::Function);
+                }
             }
             "decorated_definition" => {
-                self.render_decorated(node, SymbolKind::Function);
+                let name = inner_def_name(node, self.source);
+                if self.should_skip(&name) {
+                    self.hide(node.start_byte(), node.end_byte());
+                } else {
+                    self.render_decorated(node, SymbolKind::Function);
+                }
             }
             "class_definition" => {
-                self.render_class_def(node);
+                let name = self.name_of(node);
+                if self.should_skip(&name) {
+                    self.hide(node.start_byte(), node.end_byte());
+                } else {
+                    self.render_class_def(node);
+                }
             }
             _ => {
                 self.hide(node.start_byte(), node.end_byte());
@@ -294,19 +357,33 @@ impl<'a> Renderer<'a> {
                     emitted_any_member = true;
                 }
                 "assignment" | "augmented_assignment" | "type_alias_statement" => {
-                    self.emit_slice(child.start_byte(), child.end_byte());
-                    emitted_any_member = true;
+                    if self.public_only && !is_public_assignment(child, self.source) {
+                        self.hide(child.start_byte(), child.end_byte());
+                    } else {
+                        self.emit_slice(child.start_byte(), child.end_byte());
+                        emitted_any_member = true;
+                    }
                 }
                 "comment" => {
                     self.emit_slice(child.start_byte(), child.end_byte());
                 }
                 "function_definition" => {
-                    self.render_function_def(child, SymbolKind::Method);
-                    emitted_any_member = true;
+                    let name = self.name_of(child);
+                    if self.should_skip(&name) {
+                        self.hide(child.start_byte(), child.end_byte());
+                    } else {
+                        self.render_function_def(child, SymbolKind::Method);
+                        emitted_any_member = true;
+                    }
                 }
                 "decorated_definition" => {
-                    self.render_decorated(child, SymbolKind::Method);
-                    emitted_any_member = true;
+                    let name = inner_def_name(child, self.source);
+                    if self.should_skip(&name) {
+                        self.hide(child.start_byte(), child.end_byte());
+                    } else {
+                        self.render_decorated(child, SymbolKind::Method);
+                        emitted_any_member = true;
+                    }
                 }
                 _ => {
                     self.hide(child.start_byte(), child.end_byte());
@@ -328,6 +405,38 @@ impl<'a> Renderer<'a> {
         }
 
         self.in_focused_class = was_focused;
+    }
+}
+
+/// Best-effort name extraction for the inner declaration of a
+/// `decorated_definition` (i.e., the wrapped function or class).
+fn inner_def_name(decorated: &Node, source: &str) -> String {
+    let mut cursor = decorated.walk();
+    for child in decorated.children(&mut cursor) {
+        if matches!(child.kind(), "function_definition" | "class_definition") {
+            if let Some(name_node) = child.child_by_field_name("name") {
+                return source
+                    .get(name_node.start_byte()..name_node.end_byte())
+                    .unwrap_or("")
+                    .to_string();
+            }
+        }
+    }
+    String::new()
+}
+
+/// True if `assignment` binds a public name (LHS is an identifier or a list of
+/// identifiers all starting non-underscore, or dunder). Conservative: when in
+/// doubt, treat as public.
+fn is_public_assignment(assignment: &Node, source: &str) -> bool {
+    let Some(left) = assignment.child_by_field_name("left") else {
+        return true;
+    };
+    let text = source.get(left.start_byte()..left.end_byte()).unwrap_or("");
+    let first_ident = text.split(|c: char| !(c.is_alphanumeric() || c == '_')).find(|s| !s.is_empty());
+    match first_ident {
+        Some(name) => is_public_name(name),
+        None => true,
     }
 }
 

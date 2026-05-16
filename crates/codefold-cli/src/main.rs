@@ -32,6 +32,7 @@ struct Cli {
 enum LevelArg {
     Full,
     Signatures,
+    Public,
     Bodies,
 }
 
@@ -40,6 +41,7 @@ impl From<LevelArg> for Level {
         match a {
             LevelArg::Full => Level::Full,
             LevelArg::Signatures => Level::Signatures,
+            LevelArg::Public => Level::Public,
             LevelArg::Bodies => Level::Bodies,
         }
     }
