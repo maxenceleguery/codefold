@@ -476,10 +476,9 @@ codefold src/auth.py --level public
 codefold src/auth.py --level bodies --focus login,verify_token
 ```
 
-**Important — propagation to subagents:** if you spawn subagents (Explore,
-Plan, code-reviewer, etc.), they do NOT inherit your conversation context.
-Brief them explicitly that codefold is available and they should prefer it
-over raw file reads. Mention the CLI name and the four levels.
+Spawned subagents don't inherit your conversation context, so when one will
+read files, tell it codefold is available and to prefer it over raw file
+reads; mention the CLI name and the four levels.
 
 Installed by `codefold setup` v@VERSION@.
 @MARKER_END@"#;
