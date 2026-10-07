@@ -466,9 +466,9 @@ fn claude_md_block(version: &str) -> String {
 ## codefold
 
 When reading source files (especially > 200 lines), prefer the `codefold` CLI
-over a raw file-read. It returns a chosen slice — signatures, public surface,
-top-level bodies, or full — instead of dumping the whole file into context.
-Languages: Python, TypeScript, Rust, Go.
+over a raw file-read. It returns a chosen slice (signatures, public surface,
+top-level bodies, or full) instead of dumping the whole file into context.
+Languages: Python, TypeScript (incl. TSX/JSX), Rust, Go, Markdown.
 
 ```sh
 codefold src/auth.py --level signatures
@@ -491,7 +491,7 @@ Installed by `codefold setup` v@VERSION@.
 fn skill_md(version: &str) -> String {
     const TEMPLATE: &str = r#"---
 name: codefold
-description: Use the codefold CLI to read source files at a chosen zoom level (signatures, public, bodies, full) instead of dumping the whole file. Saves 30-90% of read tokens on typical files. Languages: Python, TypeScript, Rust, Go.
+description: Use the codefold CLI to read source files at a chosen zoom level (signatures, public, bodies, full) instead of dumping the whole file. Saves 50-90% of read tokens on large files. Languages: Python, TypeScript (incl. TSX/JSX), Rust, Go, Markdown.
 ---
 
 # codefold
@@ -572,10 +572,10 @@ description: Prefer the codefold CLI for structural code reads
 alwaysApply: true
 ---
 
-When reading source files (Python, TypeScript, Rust, Go) over ~200 lines,
+When reading source files (Python, TypeScript, Rust, Go, Markdown) over ~200 lines,
 prefer `codefold <path> --level signatures` (or `public` / `bodies`) over a
 raw cat/Read. It returns a chosen slice of the file instead of the whole file
-and saves 30-90% of tokens.
+and saves 50-90% of tokens on large files.
 
 Levels: `full`, `signatures`, `public`, `bodies`. `--focus name1,name2`
 elevates specific symbols to full body even at lower levels.
@@ -590,7 +590,7 @@ fn copilot_block(version: &str) -> String {
 ## codefold (LLM-friendly file reader)
 
 Prefer the `codefold` CLI for reading source files (Python, TypeScript, Rust,
-Go) over a raw read. It returns the file at a chosen zoom level instead of
+Go, Markdown) over a raw read. It returns the file at a chosen zoom level instead of
 dumping the whole file.
 
 ```sh
