@@ -1,0 +1,5 @@
+# robots.txt — codefold.maxenceleguery.net
+User-agent: *
+Allow: /
+
+Sitemap: https://codefold.maxenceleguery.net/sitemap.xml
