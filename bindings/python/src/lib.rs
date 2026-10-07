@@ -8,7 +8,7 @@ use pyo3::prelude::*;
 use pyo3::types::PyList;
 
 /// Python-side mirror of `codefold_core::Symbol`.
-#[pyclass(name = "Symbol", get_all, frozen, module = "codefold")]
+#[pyclass(name = "Symbol", get_all, frozen, skip_from_py_object, module = "codefold")]
 #[derive(Clone)]
 struct PySymbol {
     name: String,
