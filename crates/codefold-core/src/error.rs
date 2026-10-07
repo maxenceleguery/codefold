@@ -10,7 +10,9 @@ pub enum Error {
         source: std::io::Error,
     },
 
-    #[error("unsupported language for extension {0:?}")]
+    #[error(
+        "unsupported language for extension {0:?}. Supported: .py, .pyi, .ts, .tsx, .jsx, .rs, .go"
+    )]
     UnsupportedLanguage(String),
 
     #[error("parse failed for {path}")]

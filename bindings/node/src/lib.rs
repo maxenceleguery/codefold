@@ -8,9 +8,11 @@ use codefold_core::{read_opts, Error as CoreError, Level, Options};
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 
-/// A parsed code symbol (function, class, method, import).
+/// A parsed code symbol (function, class, method, import, section).
+///
+/// Not named `Symbol`: napi-rs would type it as the JS primitive `symbol`.
 #[napi(object)]
-pub struct Symbol {
+pub struct CodeSymbol {
     pub name: String,
     pub kind: String,
     pub byte_start: u32,
@@ -32,10 +34,10 @@ pub struct FoldResult {
     /// Rendered view the agent should consume.
     pub content: String,
     /// Symbols parsed from the file, with original positions.
-    pub symbols: Vec<Symbol>,
+    pub symbols: Vec<CodeSymbol>,
     /// Byte ranges in the original source that were elided.
     pub hidden_ranges: Vec<HiddenRange>,
-    /// Detected language (`"python"`, `"typescript"`, `"rust"`, `"go"`).
+    /// Language name (`"python"`, `"typescript"`, `"tsx"`, `"rust"`, `"go"`, `"markdown"`).
     pub language: String,
     /// Estimated token count for `content` (cl100k_base proxy).
     pub tokens_est: u32,
@@ -54,25 +56,15 @@ fn parse_level(s: &str) -> Result<Level> {
     }
 }
 
-fn symbol_kind_name(k: codefold_core::SymbolKind) -> &'static str {
-    match k {
-        codefold_core::SymbolKind::Function => "function",
-        codefold_core::SymbolKind::Method => "method",
-        codefold_core::SymbolKind::Class => "class",
-        codefold_core::SymbolKind::Import => "import",
-    }
-}
-
 fn convert_error(e: CoreError) -> Error {
     match e {
         CoreError::Io { path, source } => Error::new(
             Status::GenericFailure,
             format!("{}: {}", path.display(), source),
         ),
-        CoreError::UnsupportedLanguage(ext) => Error::new(
-            Status::InvalidArg,
-            format!("unsupported language for extension {ext:?}"),
-        ),
+        CoreError::UnsupportedLanguage(ext) => {
+            Error::new(Status::InvalidArg, format!("unsupported language {ext:?}"))
+        }
         CoreError::Parse { path } => Error::new(
             Status::GenericFailure,
             format!("parse failed for {}", path.display()),
@@ -87,41 +79,65 @@ fn convert_error(e: CoreError) -> Error {
 /// @param focus Optional list of symbol names to keep at full body regardless of base level.
 #[napi]
 pub fn read(path: String, level: Option<String>, focus: Option<Vec<String>>) -> Result<FoldResult> {
-    let level = parse_level(level.as_deref().unwrap_or("signatures"))?;
-    let opts = Options {
-        level,
+    let opts = options(level, focus)?;
+    read_opts(&PathBuf::from(path), opts)
+        .map(FoldResult::from)
+        .map_err(convert_error)
+}
+
+/// Fold an in-memory source string (an editor buffer, a diff, stdin).
+///
+/// @param source   The code to fold.
+/// @param language Language name or extension: `"python" | "py" | "typescript" | "ts" | "tsx" | "jsx" | "rust" | "rs" | "go" | "markdown" | "md"`.
+/// @param level    Same as `read`. Default `"signatures"`.
+/// @param focus    Same as `read`.
+#[napi]
+pub fn read_source(
+    source: String,
+    language: String,
+    level: Option<String>,
+    focus: Option<Vec<String>>,
+) -> Result<FoldResult> {
+    let language = language.parse().map_err(convert_error)?;
+    let opts = options(level, focus)?;
+    codefold_core::read_source(&source, language, opts)
+        .map(FoldResult::from)
+        .map_err(convert_error)
+}
+
+fn options(level: Option<String>, focus: Option<Vec<String>>) -> Result<Options> {
+    Ok(Options {
+        level: parse_level(level.as_deref().unwrap_or("signatures"))?,
         focus: focus.unwrap_or_default(),
-    };
-
-    let result = read_opts(&PathBuf::from(path), opts).map_err(convert_error)?;
-
-    let symbols = result
-        .symbols
-        .into_iter()
-        .map(|s| Symbol {
-            name: s.name,
-            kind: symbol_kind_name(s.kind).to_string(),
-            byte_start: s.byte_start as u32,
-            byte_end: s.byte_end as u32,
-            line_start: s.line_start as u32,
-            line_end: s.line_end as u32,
-        })
-        .collect();
-
-    let hidden_ranges = result
-        .hidden_ranges
-        .into_iter()
-        .map(|(start, end)| HiddenRange {
-            start: start as u32,
-            end: end as u32,
-        })
-        .collect();
-
-    Ok(FoldResult {
-        content: result.content,
-        symbols,
-        hidden_ranges,
-        language: result.language,
-        tokens_est: result.tokens_est as u32,
     })
+}
+
+impl From<codefold_core::FoldResult> for FoldResult {
+    fn from(r: codefold_core::FoldResult) -> Self {
+        FoldResult {
+            content: r.content,
+            symbols: r
+                .symbols
+                .into_iter()
+                .map(|s| CodeSymbol {
+                    name: s.name,
+                    kind: s.kind.as_str().to_string(),
+                    byte_start: s.byte_start as u32,
+                    byte_end: s.byte_end as u32,
+                    line_start: s.line_start as u32,
+                    line_end: s.line_end as u32,
+                })
+                .collect(),
+            hidden_ranges: r
+                .hidden_ranges
+                .into_iter()
+                .map(|(start, end)| HiddenRange {
+                    start: start as u32,
+                    end: end as u32,
+                })
+                .collect(),
+            language: r.language,
+            tokens_est: r.tokens_est as u32,
+        }
+    }
 }

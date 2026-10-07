@@ -135,3 +135,32 @@ def test_level_aliases():
     r3 = codefold.read(fixture("python/auth.py"), level="pub")
     r4 = codefold.read(fixture("python/auth.py"), level="public")
     assert r3.content == r4.content
+
+
+def test_focus_accepts_tuple():
+    r = codefold.read(fixture("python/auth.py"), level="signatures", focus=("login",))
+    assert "user = next(" in r.content
+
+
+def test_read_source():
+    r = codefold.read_source("def f(x):\n    return x + 1\n", "python")
+    assert r.language == "python"
+    assert "def f(x):" in r.content
+    assert "return x + 1" not in r.content
+
+
+def test_read_source_level_focus_and_extension_alias():
+    src = "def a():\n    return 1\n\ndef b():\n    return 2\n"
+    r = codefold.read_source(src, "py", level="signatures", focus=["b"])
+    assert "return 2" in r.content
+    assert "return 1" not in r.content
+
+
+def test_read_source_markdown_sections():
+    r = codefold.read_source("# Title\n\nbody\n", "markdown")
+    assert r.symbols[0].kind == "section"
+
+
+def test_read_source_unknown_language_raises_value_error():
+    with pytest.raises(ValueError, match="cobol"):
+        codefold.read_source("x", "cobol")
