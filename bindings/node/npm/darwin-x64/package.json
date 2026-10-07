@@ -17,7 +17,7 @@
     "tree-sitter",
     "napi"
   ],
-  "author": "maxenceleguery <maxence.leguery@gmail.com>",
+  "author": "maxenceleguery <codefold@maxenceleguery.net>",
   "homepage": "https://codefold.maxenceleguery.net",
   "license": "MIT",
   "engines": {

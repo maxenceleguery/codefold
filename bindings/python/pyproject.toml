@@ -9,7 +9,7 @@ license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.8"
 authors = [
-    { name = "maxenceleguery", email = "maxence.leguery@gmail.com" }
+    { name = "maxenceleguery", email = "codefold@maxenceleguery.net" }
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
