@@ -235,7 +235,7 @@ checksum = "1c133bc6a41be0d194c306b5506d15e6feeea7b1d6604bd3f8310dfb2ca96486"
 
 [[package]]
 name = "codefold-cli"
-version = "0.8.3"
+version = "0.9.0"
 dependencies = [
  "assert_cmd",
  "clap",
@@ -250,7 +250,7 @@ dependencies = [
 
 [[package]]
 name = "codefold-core"
-version = "0.8.3"
+version = "0.9.0"
 dependencies = [
  "criterion",
  "insta",
@@ -267,7 +267,7 @@ dependencies = [
 
 [[package]]
 name = "codefold-node"
-version = "0.8.3"
+version = "0.9.0"
 dependencies = [
  "codefold-core",
  "napi",
@@ -277,7 +277,7 @@ dependencies = [
 
 [[package]]
 name = "codefold-py"
-version = "0.8.3"
+version = "0.9.0"
 dependencies = [
  "codefold-core",
  "pyo3",
