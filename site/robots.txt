@@ -1,4 +1,4 @@
-# robots.txt — codefold.maxenceleguery.net
+# robots.txt for codefold.maxenceleguery.net
 User-agent: *
 Allow: /
 

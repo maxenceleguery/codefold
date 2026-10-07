@@ -3,16 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>codefold — Read, with zoom levels</title>
+    <title>codefold: Read, with zoom levels</title>
     <meta
       name="description"
-      content="codefold is a structural code reader for LLM agents. A pure library that returns a chosen level of detail for a single file — signatures, public surface, top-level bodies, or full — instead of dumping the whole file into context."
+      content="codefold is a structural code reader for LLM agents. It folds a file to signatures, public surface, top-level bodies, or full, cutting 50 to 90% of read tokens on large files. Python, TypeScript, Rust, Go, Markdown. CLI, Python, Node and Rust."
     />
     <meta name="theme-color" content="#0a0a0a" />
-    <meta property="og:title" content="codefold — Read, with zoom levels" />
+    <meta property="og:title" content="codefold: Read, with zoom levels" />
     <meta
       property="og:description"
-      content="Structural code reader for LLM agents. Python, TypeScript, Rust, Go."
+      content="Structural code reader for LLM agents. Cut 50 to 90% of read tokens on large files. Python, TypeScript, Rust, Go, Markdown."
     />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="canonical" href="https://codefold.maxenceleguery.net/" />
@@ -24,10 +24,10 @@
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="codefold — Read, with zoom levels" />
+    <meta name="twitter:title" content="codefold: Read, with zoom levels" />
     <meta
       name="twitter:description"
-      content="Structural code reader for LLM agents. Python, TypeScript, Rust, Go."
+      content="Structural code reader for LLM agents. Cut 50 to 90% of read tokens on large files. Python, TypeScript, Rust, Go, Markdown."
     />
     <meta name="twitter:image" content="https://codefold.maxenceleguery.net/og.png" />
     <script type="application/ld+json">
@@ -37,10 +37,11 @@
         "name": "codefold",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Cross-platform",
-        "description": "A structural code reader for LLM agents — returns a chosen level of detail for a file (signatures, public surface, top-level bodies, or full) instead of dumping the whole file into context.",
+        "description": "A structural code reader for LLM agents: returns a chosen level of detail for a file (signatures, public surface, top-level bodies, or full) instead of dumping the whole file into context.",
+        "softwareVersion": "0.9.0",
         "url": "https://codefold.maxenceleguery.net/",
         "codeRepository": "https://github.com/maxenceleguery/codefold",
-        "programmingLanguage": ["Python", "TypeScript", "Rust", "Go"],
+        "programmingLanguage": "Rust",
         "author": { "@type": "Person", "name": "Maxence Leguéry", "url": "https://maxenceleguery.net" },
         "isAccessibleForFree": true,
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
@@ -147,6 +148,20 @@
         color: var(--muted);
         font-weight: 600;
       }
+      .table-wrap {
+        overflow-x: auto;
+        margin: 0 0 16px;
+      }
+      .table-wrap table {
+        margin: 0;
+      }
+      /* Phones: keep File + Saving visible, drop the signatures column. */
+      @media (max-width: 520px) {
+        .table-wrap th:nth-child(3),
+        .table-wrap td:nth-child(3) {
+          display: none;
+        }
+      }
       td.num {
         text-align: right;
         font-variant-numeric: tabular-nums;
@@ -203,56 +218,114 @@
 
         <p>
           A structural code reader for LLM agents. Hand it a file and a zoom
-          level — it gives you back the slice of the file the model actually
+          level; it gives you back the slice of the file the model actually
           needs to see, instead of dumping the whole file into context.
         </p>
 
         <p>
           <span class="pill">Python</span> <span class="pill">TypeScript</span>
-          <span class="pill">Rust</span> <span class="pill">Go</span>
+          <span class="pill">TSX / JSX</span> <span class="pill">Rust</span>
+          <span class="pill">Go</span> <span class="pill">Markdown</span>
         </p>
       </header>
 
-      <h2>Compression on real fixtures</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>File</th>
-            <th class="num">Full</th>
-            <th class="num">Signatures</th>
-            <th class="num">Saving</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><code>auth.py</code> (90 LOC)</td>
-            <td class="num">474 tok</td>
-            <td class="num">320 tok</td>
-            <td class="num save">−32%</td>
-          </tr>
-          <tr>
-            <td><code>heavy.py</code> (110 LOC, body-heavy)</td>
-            <td class="num">809 tok</td>
-            <td class="num">212 tok</td>
-            <td class="num save">−74%</td>
-          </tr>
-          <tr>
-            <td><code>auth.ts</code> (75 LOC)</td>
-            <td class="num">468 tok</td>
-            <td class="num">324 tok</td>
-            <td class="num save">−31%</td>
-          </tr>
-        </tbody>
-      </table>
+      <h2>Install</h2>
+      <pre><code>pip install codefold                    # Python
+npm install @maxenceleguery/codefold    # Node.js
+cargo install codefold-cli              # CLI
+cargo add codefold-core                 # Rust library</code></pre>
       <p>
-        On real-world service files over 500 lines, expect 70–90% token
-        reductions at <code>signatures</code> level.
+        Prebuilt wheels and native binaries for Linux, macOS and Windows.
+      </p>
+
+      <h2>Token savings on real files</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>File</th>
+              <th class="num">Full</th>
+              <th class="num">signatures</th>
+              <th class="num">Saving</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>supabase <code>GoTrueClient.ts</code></td>
+              <td class="num">59.5k</td>
+              <td class="num">8.2k</td>
+              <td class="num save">&minus;87%</td>
+            </tr>
+            <tr>
+              <td>CPython <code>asyncio/base_events.py</code></td>
+              <td class="num">15.9k</td>
+              <td class="num">2.8k</td>
+              <td class="num save">&minus;83%</td>
+            </tr>
+            <tr>
+              <td>Go <code>encoding/json/encode.go</code></td>
+              <td class="num">11.0k</td>
+              <td class="num">2.2k</td>
+              <td class="num save">&minus;80%</td>
+            </tr>
+            <tr>
+              <td>clap_builder <code>command.rs</code></td>
+              <td class="num">43.5k</td>
+              <td class="num">10.4k</td>
+              <td class="num save">&minus;77%</td>
+            </tr>
+            <tr>
+              <td>CPython <code>argparse.py</code></td>
+              <td class="num">20.3k</td>
+              <td class="num">5.2k</td>
+              <td class="num save">&minus;75%</td>
+            </tr>
+            <tr>
+              <td>Go <code>net/http/server.go</code></td>
+              <td class="num">34.7k</td>
+              <td class="num">11.5k</td>
+              <td class="num save">&minus;67%</td>
+            </tr>
+            <tr>
+              <td>serde_json <code>de.rs</code></td>
+              <td class="num">21.0k</td>
+              <td class="num">7.8k</td>
+              <td class="num save">&minus;63%</td>
+            </tr>
+            <tr>
+              <td>zod <code>v3/types.ts</code></td>
+              <td class="num">41.4k</td>
+              <td class="num">21.6k</td>
+              <td class="num save">&minus;48%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Tokens (cl100k) measured with codefold 0.9. Savings follow the
+        body-to-signature ratio: implementation-heavy files shrink most,
+        type-heavy files like zod keep more. <code>public</code> goes further,
+        to 73 to 91% on most of these.
+      </p>
+
+      <h2>Use it from your agent</h2>
+      <pre><code>codefold setup                  # this project: CLAUDE.md, Cursor, Copilot
+codefold setup --scope user     # everywhere: ~/.claude/CLAUDE.md + a Claude Code skill
+codefold setup --list           # what's installed, and is it current
+codefold setup --uninstall
+codefold doctor</code></pre>
+      <p>
+        <code>setup</code> writes a short, idempotent instruction block telling
+        the agent to reach for <code>codefold</code> before a raw file read,
+        and to brief its subagents about it too.
       </p>
 
       <h2>CLI</h2>
-      <pre><code>codefold src/auth.py --level signatures
+      <pre><code>codefold src/auth.py                               # signatures (default)
 codefold src/auth.py --level bodies --focus login,verify_token
-codefold src/handlers.ts --level public --stats</code></pre>
+codefold src/*.ts --level public --stats           # many files at once
+codefold src/auth.py --format json                 # symbols + hidden line ranges
+git show HEAD:src/auth.py | codefold - --lang python</code></pre>
 
       <h2>Python</h2>
       <pre><code>import codefold
@@ -261,9 +334,17 @@ r = codefold.read("src/auth.py", level="signatures")
 print(r.content)
 print(f"~{r.tokens_est} tokens, {len(r.symbols)} symbols, {r.language}")
 
-# With focus
-r = codefold.read("src/auth.py", level="signatures",
-                  focus=["login", "verify_token"])</code></pre>
+# Keep `login` in full, the rest as signatures
+r = codefold.read("src/auth.py", focus=["login"])
+
+# Code you already have in memory
+r = codefold.read_source(source, "typescript", level="public")</code></pre>
+
+      <h2>Node.js</h2>
+      <pre><code>import { read, readSource } from "@maxenceleguery/codefold";
+
+const r = read("src/auth.py", "signatures", ["login"]);
+const r2 = readSource(buffer, "tsx", "public");</code></pre>
 
       <h2>Rust</h2>
       <pre><code>use codefold_core::{read, read_opts, Level, Options};
@@ -275,49 +356,36 @@ let r = read_opts("src/auth.py".as_ref(), opts)?;</code></pre>
       <h2>Levels</h2>
       <ul>
         <li>
-          <code>full</code> — the file verbatim. For API symmetry.
+          <code>signatures</code>: imports, top-level constants, function and
+          class signatures, and the first paragraph of each docstring or doc
+          comment. Bodies become <code>...</code>. Markdown keeps its headings.
         </li>
         <li>
-          <code>signatures</code> — imports, top-level constants, function /
-          class signatures, docstring summaries. Bodies replaced with
-          <code>...</code>.
+          <code>public</code>: like <code>signatures</code>, limited to the
+          public surface (Python: no <code>_</code> prefix; TypeScript:
+          <code>export</code>ed; Rust: <code>pub</code>; Go: uppercase-first).
         </li>
         <li>
-          <code>public</code> — like <code>signatures</code>, but only
-          public-by-convention symbols (Python: not <code>_</code>-prefixed;
-          TypeScript: <code>export</code>ed; Rust: <code>pub</code>; Go:
-          uppercase-first).
+          <code>bodies</code>: top-level and method bodies in full, nested
+          function bodies collapsed.
         </li>
-        <li>
-          <code>bodies</code> — top-level &amp; class-method bodies in full;
-          nested function bodies collapsed.
-        </li>
+        <li><code>full</code>: the file verbatim, for API symmetry.</li>
       </ul>
+      <p>
+        <code>focus</code> lifts named symbols to full body and full docs at any
+        level.
+      </p>
 
       <h2>Positioning</h2>
       <p>
-        The agent-tooling space is busy. codefold's niche: a stateless,
-        embeddable <em>primitive</em> — not a CLI middleware
+        The agent-tooling space is busy. codefold's niche is a stateless,
+        embeddable <em>primitive</em>: not CLI middleware
         (<a href="https://github.com/dean0x/skim">skim</a>) and not a whole-repo
         knowledge graph
         (<a href="https://github.com/DeusData/codebase-memory-mcp"
           >codebase-memory-mcp</a
-        >). If you're building an agent framework or a code-aware tool and you
-        need granular single-file reads, codefold drops in as a library.
-      </p>
-
-      <h2>Install</h2>
-      <pre><code># CLI
-cargo install --git https://github.com/maxenceleguery/codefold codefold-cli
-
-# Python (Rust toolchain required at build time)
-uv venv && source .venv/bin/activate
-uv pip install maturin
-uv run maturin develop --release --manifest-path codefold/bindings/python/Cargo.toml</code></pre>
-
-      <p>
-        Binary wheels on PyPI and a published crate on crates.io are on the
-        roadmap.
+        >). If you're building an agent framework or a code-aware tool and need
+        granular single-file reads, codefold drops in as a library.
       </p>
 
       <footer>
