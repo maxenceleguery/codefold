@@ -7,7 +7,13 @@ use pyo3::exceptions::{PyFileNotFoundError, PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
 
 /// Python-side mirror of `codefold_core::Symbol`.
-#[pyclass(name = "Symbol", get_all, frozen, skip_from_py_object, module = "codefold")]
+#[pyclass(
+    name = "Symbol",
+    get_all,
+    frozen,
+    skip_from_py_object,
+    module = "codefold"
+)]
 #[derive(Clone)]
 struct PySymbol {
     name: String,
@@ -62,7 +68,6 @@ fn parse_level(s: &str) -> PyResult<Level> {
         ))),
     }
 }
-
 
 /// Read `path` at the requested zoom `level`.
 ///

@@ -384,4 +384,3 @@ fn byte_to_line(line_starts: &[usize], byte: usize) -> usize {
         Err(i) => i,
     }
 }
-

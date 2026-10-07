@@ -56,17 +56,15 @@ fn parse_level(s: &str) -> Result<Level> {
     }
 }
 
-
 fn convert_error(e: CoreError) -> Error {
     match e {
         CoreError::Io { path, source } => Error::new(
             Status::GenericFailure,
             format!("{}: {}", path.display(), source),
         ),
-        CoreError::UnsupportedLanguage(ext) => Error::new(
-            Status::InvalidArg,
-            format!("unsupported language {ext:?}"),
-        ),
+        CoreError::UnsupportedLanguage(ext) => {
+            Error::new(Status::InvalidArg, format!("unsupported language {ext:?}"))
+        }
         CoreError::Parse { path } => Error::new(
             Status::GenericFailure,
             format!("parse failed for {}", path.display()),
