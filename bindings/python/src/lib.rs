@@ -5,7 +5,6 @@ use std::path::PathBuf;
 use codefold_core::{read_opts, Error, Level, Options};
 use pyo3::exceptions::{PyFileNotFoundError, PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
-use pyo3::types::PyList;
 
 /// Python-side mirror of `codefold_core::Symbol`.
 #[pyclass(name = "Symbol", get_all, frozen, skip_from_py_object, module = "codefold")]
@@ -70,7 +69,7 @@ fn parse_level(s: &str) -> PyResult<Level> {
 /// Args:
 ///     path: Source file to read.
 ///     level: One of "full", "signatures", "public", "bodies". Default "signatures".
-///     focus: Optional iterable of symbol names to render at full body
+///     focus: Optional list or tuple of symbol names to render at full body
 ///            regardless of base level.
 ///
 /// Returns:
@@ -78,40 +77,63 @@ fn parse_level(s: &str) -> PyResult<Level> {
 ///     `tokens_est`.
 #[pyfunction]
 #[pyo3(signature = (path, level="signatures", focus=None))]
-fn read(path: PathBuf, level: &str, focus: Option<&Bound<'_, PyList>>) -> PyResult<PyFoldResult> {
-    let level = parse_level(level)?;
-    let mut opts = Options::new(level);
-    if let Some(focus_list) = focus {
-        let mut names = Vec::with_capacity(focus_list.len());
-        for item in focus_list.iter() {
-            let s: String = item.extract()?;
-            names.push(s);
+fn read(path: PathBuf, level: &str, focus: Option<Vec<String>>) -> PyResult<PyFoldResult> {
+    let opts = options(level, focus)?;
+    read_opts(&path, opts)
+        .map(PyFoldResult::from)
+        .map_err(convert_error)
+}
+
+/// Fold an in-memory `source` string (stdin, a diff, an editor buffer, ...).
+///
+/// Args:
+///     source: The code to fold.
+///     language: Language name or extension: "python"/"py", "typescript"/"ts",
+///               "tsx"/"jsx", "rust"/"rs", "go", "markdown"/"md".
+///     level: Same as `read`. Default "signatures".
+///     focus: Same as `read`.
+#[pyfunction]
+#[pyo3(signature = (source, language, level="signatures", focus=None))]
+fn read_source(
+    source: &str,
+    language: &str,
+    level: &str,
+    focus: Option<Vec<String>>,
+) -> PyResult<PyFoldResult> {
+    let language = language.parse().map_err(convert_error)?;
+    let opts = options(level, focus)?;
+    codefold_core::read_source(source, language, opts)
+        .map(PyFoldResult::from)
+        .map_err(convert_error)
+}
+
+fn options(level: &str, focus: Option<Vec<String>>) -> PyResult<Options> {
+    let mut opts = Options::new(parse_level(level)?);
+    opts.focus = focus.unwrap_or_default();
+    Ok(opts)
+}
+
+impl From<codefold_core::FoldResult> for PyFoldResult {
+    fn from(r: codefold_core::FoldResult) -> Self {
+        PyFoldResult {
+            content: r.content,
+            symbols: r
+                .symbols
+                .into_iter()
+                .map(|s| PySymbol {
+                    name: s.name,
+                    kind: s.kind.as_str().to_string(),
+                    byte_start: s.byte_start,
+                    byte_end: s.byte_end,
+                    line_start: s.line_start,
+                    line_end: s.line_end,
+                })
+                .collect(),
+            hidden_ranges: r.hidden_ranges,
+            language: r.language,
+            tokens_est: r.tokens_est,
         }
-        opts.focus = names;
     }
-
-    let result = read_opts(&path, opts).map_err(convert_error)?;
-
-    let symbols: Vec<PySymbol> = result
-        .symbols
-        .into_iter()
-        .map(|s| PySymbol {
-            name: s.name,
-            kind: s.kind.as_str().to_string(),
-            byte_start: s.byte_start,
-            byte_end: s.byte_end,
-            line_start: s.line_start,
-            line_end: s.line_end,
-        })
-        .collect();
-
-    Ok(PyFoldResult {
-        content: result.content,
-        symbols,
-        hidden_ranges: result.hidden_ranges,
-        language: result.language,
-        tokens_est: result.tokens_est,
-    })
 }
 
 fn convert_error(e: Error) -> PyErr {
@@ -120,7 +142,7 @@ fn convert_error(e: Error) -> PyErr {
             PyFileNotFoundError::new_err(format!("{}: {}", path.display(), source))
         }
         Error::UnsupportedLanguage(ext) => {
-            PyValueError::new_err(format!("unsupported language for extension {ext:?}"))
+            PyValueError::new_err(format!("unsupported language {ext:?}"))
         }
         Error::Parse { path } => {
             PyRuntimeError::new_err(format!("parse failed for {}", path.display()))
@@ -133,6 +155,7 @@ fn convert_error(e: Error) -> PyErr {
 fn codefold(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_function(wrap_pyfunction!(read, m)?)?;
+    m.add_function(wrap_pyfunction!(read_source, m)?)?;
     m.add_class::<PyFoldResult>()?;
     m.add_class::<PySymbol>()?;
     Ok(())
