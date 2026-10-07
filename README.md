@@ -159,10 +159,11 @@ If you're building an agent framework or a code-aware tool and you need granular
 
 ## Status
 
-Early. v0.9.0. Python, TypeScript/TSX, Rust, Go, Markdown. API is not yet stable.
+Early. v0.9.1. Python, TypeScript/TSX, Rust, Go, Markdown. API is not yet stable.
 
 ### Changelog
 
+- **0.9.1**: CI fix: the npm publish job ran `npm install -g npm@latest` on Node 20, and npm 12 requires Node 22+. Release jobs now use Node 24 with npm pinned to 11.x. First npm release of the 0.9 line; crates.io and PyPI got 0.9.0.
 - **0.9.0**: Doc comments summarized to their first paragraph at `signatures`/`public` for Rust, TypeScript and Go, like Python docstrings (clap's `command.rs` goes from -24% to -77%). Markdown support (headings outline, `section` symbol kind). TSX/JSX. CLI: stdin via `-` + `--lang`, multi-file reads, `--format json` with line numbers in hidden ranges, `doctor`, `setup --list`/`--uninstall`, `update --check` exits 10 when an update exists. Bindings: `read_source` (Python) / `readSource` (Node) for in-memory code; Python `focus` takes any sequence; fixed Node typings (`symbols` was typed as the JS primitive `symbol`; the interface is now `CodeSymbol`). Core: `Language: FromStr`, `SymbolKind::as_str`. Security: pyo3 0.29 and refreshed lockfile (RUSTSEC-2025-0020 and others). PyPI page now has a README.
 - **0.8.3** — CI fix: switch publish job from `npm ci` to `npm install --omit=optional` since `npm ci` enforces lock-vs-package.json sync even for self-referential optional deps that aren't on the registry yet at release time.
 - **0.8.2** — CI fix: `npm ci --omit=optional` so the publish job doesn't choke on out-of-sync lock entries for our own (not-yet-published) scoped sub-packages. (Insufficient — superseded by 0.8.3.)
