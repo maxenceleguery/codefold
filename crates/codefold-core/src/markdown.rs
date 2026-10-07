@@ -9,9 +9,9 @@
 //!     hide every byte between them. Turns a long README / spec into its
 //!     outline.
 //!
-//! Symbols: one per heading. `name` is the heading text (without `#`
-//! markers), `kind` is `Class` (closest existing `SymbolKind` for a section
-//! header), `line_start`/`line_end` point at the heading line(s).
+//! Symbols: one per heading. `name` is the heading text prefixed with ATX
+//! `#` markers for its depth (setext headings too), `kind` is `Section`,
+//! `line_start`/`line_end` point at the heading line(s).
 
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 
@@ -130,7 +130,7 @@ fn headings_to_symbols(headings: &[Heading]) -> Vec<Symbol> {
             let name = format!("{} {}", "#".repeat(depth), h.title);
             Symbol {
                 name,
-                kind: SymbolKind::Class,
+                kind: SymbolKind::Section,
                 byte_start: h.byte_start,
                 byte_end: h.byte_end,
                 line_start: h.line_start,

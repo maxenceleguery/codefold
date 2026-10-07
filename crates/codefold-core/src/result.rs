@@ -15,6 +15,20 @@ pub enum SymbolKind {
     Method,
     Class,
     Import,
+    /// A Markdown heading and the content under it.
+    Section,
+}
+
+impl SymbolKind {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            SymbolKind::Function => "function",
+            SymbolKind::Method => "method",
+            SymbolKind::Class => "class",
+            SymbolKind::Import => "import",
+            SymbolKind::Section => "section",
+        }
+    }
 }
 
 /// Output of `read()`.

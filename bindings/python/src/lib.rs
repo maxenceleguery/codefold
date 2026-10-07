@@ -64,14 +64,6 @@ fn parse_level(s: &str) -> PyResult<Level> {
     }
 }
 
-fn symbol_kind_name(k: codefold_core::SymbolKind) -> &'static str {
-    match k {
-        codefold_core::SymbolKind::Function => "function",
-        codefold_core::SymbolKind::Method => "method",
-        codefold_core::SymbolKind::Class => "class",
-        codefold_core::SymbolKind::Import => "import",
-    }
-}
 
 /// Read `path` at the requested zoom `level`.
 ///
@@ -105,7 +97,7 @@ fn read(path: PathBuf, level: &str, focus: Option<&Bound<'_, PyList>>) -> PyResu
         .into_iter()
         .map(|s| PySymbol {
             name: s.name,
-            kind: symbol_kind_name(s.kind).to_string(),
+            kind: s.kind.as_str().to_string(),
             byte_start: s.byte_start,
             byte_end: s.byte_end,
             line_start: s.line_start,

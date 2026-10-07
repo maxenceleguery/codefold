@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
-use codefold_core::{read_opts, read_source, FoldResult, Language, Level, Options, SymbolKind};
+use codefold_core::{read_opts, read_source, FoldResult, Language, Level, Options};
 
 mod doctor;
 mod setup;
@@ -331,7 +331,7 @@ fn emit_json(outcomes: &[ReadOutcome], single: bool) -> ExitCode {
                     "content": r.content,
                     "symbols": r.symbols.iter().map(|s| json!({
                         "name": s.name,
-                        "kind": symbol_kind_str(s.kind),
+                        "kind": s.kind.as_str(),
                         "byte_start": s.byte_start,
                         "byte_end": s.byte_end,
                         "line_start": s.line_start,
@@ -385,11 +385,3 @@ fn byte_to_line(line_starts: &[usize], byte: usize) -> usize {
     }
 }
 
-fn symbol_kind_str(k: SymbolKind) -> &'static str {
-    match k {
-        SymbolKind::Function => "function",
-        SymbolKind::Method => "method",
-        SymbolKind::Class => "class",
-        SymbolKind::Import => "import",
-    }
-}

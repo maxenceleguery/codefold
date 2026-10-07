@@ -34,7 +34,10 @@ impl Language {
     ];
 
     pub fn detect(path: &Path) -> Result<Self, Error> {
-        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+        Self::from_ext(path.extension().and_then(|e| e.to_str()).unwrap_or(""))
+    }
+
+    fn from_ext(ext: &str) -> Result<Self, Error> {
         match ext {
             "py" | "pyi" => Ok(Language::Python),
             "ts" => Ok(Language::TypeScript),
@@ -43,6 +46,21 @@ impl Language {
             "go" => Ok(Language::Go),
             "md" | "markdown" => Ok(Language::Markdown),
             other => Err(Error::UnsupportedLanguage(other.to_string())),
+        }
+    }
+}
+
+/// Parses a language name (`"python"`, `"tsx"`, ...) or a file extension
+/// (`"py"`, `"md"`, ...), case-insensitively.
+impl std::str::FromStr for Language {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Error> {
+        match s.to_ascii_lowercase().as_str() {
+            "python" => Ok(Language::Python),
+            "typescript" => Ok(Language::TypeScript),
+            "rust" => Ok(Language::Rust),
+            other => Self::from_ext(other),
         }
     }
 }

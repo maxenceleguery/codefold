@@ -54,14 +54,6 @@ fn parse_level(s: &str) -> Result<Level> {
     }
 }
 
-fn symbol_kind_name(k: codefold_core::SymbolKind) -> &'static str {
-    match k {
-        codefold_core::SymbolKind::Function => "function",
-        codefold_core::SymbolKind::Method => "method",
-        codefold_core::SymbolKind::Class => "class",
-        codefold_core::SymbolKind::Import => "import",
-    }
-}
 
 fn convert_error(e: CoreError) -> Error {
     match e {
@@ -100,7 +92,7 @@ pub fn read(path: String, level: Option<String>, focus: Option<Vec<String>>) -> 
         .into_iter()
         .map(|s| Symbol {
             name: s.name,
-            kind: symbol_kind_name(s.kind).to_string(),
+            kind: s.kind.as_str().to_string(),
             byte_start: s.byte_start as u32,
             byte_end: s.byte_end as u32,
             line_start: s.line_start as u32,
