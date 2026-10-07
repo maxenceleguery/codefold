@@ -1,6 +1,6 @@
 {
   "name": "@maxenceleguery/codefold-darwin-arm64",
-  "version": "0.8.3",
+  "version": "0.9.0",
   "cpu": [
     "arm64"
   ],
@@ -17,7 +17,7 @@
     "tree-sitter",
     "napi"
   ],
-  "author": "maxenceleguery <maxence.leguery@gmail.com>",
+  "author": "maxenceleguery <codefold@maxenceleguery.net>",
   "homepage": "https://codefold.maxenceleguery.net",
   "license": "MIT",
   "engines": {

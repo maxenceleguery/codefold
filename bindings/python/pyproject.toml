@@ -4,12 +4,13 @@ build-backend = "maturin"
 
 [project]
 name = "codefold"
-description = "Structural code reader for LLM agents — Read, with zoom levels."
+description = "Structural code reader for LLM agents: Read, with zoom levels."
+readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.8"
 authors = [
-    { name = "maxenceleguery", email = "maxence.leguery@gmail.com" }
+    { name = "maxenceleguery", email = "codefold@maxenceleguery.net" }
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -23,8 +24,14 @@ classifiers = [
 dynamic = ["version"]
 
 [project.urls]
+Homepage = "https://codefold.maxenceleguery.net"
 Repository = "https://github.com/maxenceleguery/codefold"
+Changelog = "https://github.com/maxenceleguery/codefold/releases"
 
 [tool.maturin]
 module-name = "codefold"
 features = ["pyo3/extension-module"]
+
+# Rebuild when Rust sources change; otherwise `uv run` reinstalls a stale cached wheel.
+[tool.uv]
+cache-keys = [{ file = "pyproject.toml" }, { file = "src/**/*.rs" }, { file = "../../crates/codefold-core/src/**/*.rs" }]

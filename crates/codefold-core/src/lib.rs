@@ -2,6 +2,7 @@
 //!
 //! `Read`, with zoom levels.
 
+mod doc;
 pub mod error;
 mod go;
 mod language;

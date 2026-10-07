@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { read } from "../index.js";
+import { read, readSource } from "../index.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.resolve(
@@ -85,4 +85,28 @@ test("invalid level throws", () => {
     () => read(fix("python/auth.py"), "quantum"),
     /unknown level/,
   );
+});
+
+test("readSource folds an in-memory string", () => {
+  const r = readSource("def f(x):\n    return x + 1\n", "python");
+  assert.equal(r.language, "python");
+  assert.ok(r.content.includes("def f(x):"));
+  assert.ok(!r.content.includes("return x + 1"));
+});
+
+test("readSource honors level, focus and extension aliases", () => {
+  const src = "def a():\n    return 1\n\ndef b():\n    return 2\n";
+  const r = readSource(src, "py", "signatures", ["b"]);
+  assert.ok(r.content.includes("return 2"));
+  assert.ok(!r.content.includes("return 1"));
+});
+
+test("readSource unknown language throws", () => {
+  assert.throws(() => readSource("x", "cobol"), /cobol/);
+});
+
+test("type defs name symbols with an interface, not the JS primitive", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const dts = await readFile(path.resolve(__dirname, "../index.d.ts"), "utf8");
+  assert.ok(!/Array<symbol>/.test(dts), "symbols typed as primitive symbol");
 });

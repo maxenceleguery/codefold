@@ -29,6 +29,9 @@ pub fn render(
         public_only,
         focus.iter().cloned().collect(),
     );
+    if base_mode == Mode::Signatures {
+        r.elide = crate::doc::tails(source, tree, &r.focus);
+    }
     r.render_program(tree.root_node());
     RenderOutput {
         content: r.out,
@@ -53,6 +56,8 @@ struct Renderer<'a> {
     out: String,
     symbols: Vec<Symbol>,
     hidden: Vec<(usize, usize)>,
+    /// Doc-comment tails to skip at signatures/public (see `doc`).
+    elide: Vec<(usize, usize)>,
 }
 
 impl<'a> Renderer<'a> {
@@ -67,6 +72,7 @@ impl<'a> Renderer<'a> {
             out: String::new(),
             symbols: Vec::new(),
             hidden: Vec::new(),
+            elide: Vec::new(),
         }
     }
 
@@ -83,9 +89,14 @@ impl<'a> Renderer<'a> {
     }
 
     fn emit_slice(&mut self, start: usize, end: usize) {
-        if let Some(s) = self.source.get(start..end) {
-            self.out.push_str(s);
-        }
+        crate::doc::emit(
+            self.source,
+            &self.elide,
+            start,
+            end,
+            &mut self.out,
+            &mut self.hidden,
+        );
     }
 
     fn hide(&mut self, start: usize, end: usize) {

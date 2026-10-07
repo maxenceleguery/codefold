@@ -32,3 +32,6 @@ bindings/node/index.d.ts
 
 # insta pending snapshots
 **/*.snap.new
+
+# uv recreates this on every `uv run`; the library pins nothing
+bindings/python/uv.lock

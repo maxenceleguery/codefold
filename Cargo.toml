@@ -8,10 +8,10 @@ members = [
 ]
 
 [workspace.package]
-version = "0.8.3"
+version = "0.9.0"
 edition = "2021"
 license = "MIT"
-authors = ["maxenceleguery <maxence.leguery@gmail.com>"]
+authors = ["maxenceleguery <codefold@maxenceleguery.net>"]
 repository = "https://github.com/maxenceleguery/codefold"
 homepage = "https://codefold.maxenceleguery.net"
 documentation = "https://docs.rs/codefold-core"

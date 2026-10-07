@@ -1,6 +1,6 @@
 {
   "name": "@maxenceleguery/codefold",
-  "version": "0.8.3",
+  "version": "0.9.0",
   "description": "Structural code reader for LLM agents \u2014 Read, with zoom levels.",
   "keywords": [
     "llm",
@@ -11,7 +11,7 @@
     "napi"
   ],
   "license": "MIT",
-  "author": "maxenceleguery <maxence.leguery@gmail.com>",
+  "author": "maxenceleguery <codefold@maxenceleguery.net>",
   "homepage": "https://codefold.maxenceleguery.net",
   "repository": {
     "type": "git",
@@ -46,10 +46,10 @@
     "@napi-rs/cli": "^3.0.0"
   },
   "optionalDependencies": {
-    "@maxenceleguery/codefold-linux-x64-gnu": "0.8.3",
-    "@maxenceleguery/codefold-linux-arm64-gnu": "0.8.3",
-    "@maxenceleguery/codefold-darwin-x64": "0.8.3",
-    "@maxenceleguery/codefold-darwin-arm64": "0.8.3",
-    "@maxenceleguery/codefold-win32-x64-msvc": "0.8.3"
+    "@maxenceleguery/codefold-linux-x64-gnu": "0.9.0",
+    "@maxenceleguery/codefold-linux-arm64-gnu": "0.9.0",
+    "@maxenceleguery/codefold-darwin-x64": "0.9.0",
+    "@maxenceleguery/codefold-darwin-arm64": "0.9.0",
+    "@maxenceleguery/codefold-win32-x64-msvc": "0.9.0"
   }
 }

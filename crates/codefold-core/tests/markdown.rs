@@ -99,3 +99,14 @@ fn dot_markdown_extension_works() {
     assert!(!r.content.contains("World"));
     let _ = std::fs::remove_file(&tmp);
 }
+
+#[test]
+fn headings_are_section_symbols() {
+    let r = read(&fixture("markdown/sample.md"), Level::Signatures).unwrap();
+    assert!(!r.symbols.is_empty());
+    assert!(r
+        .symbols
+        .iter()
+        .all(|s| s.kind == codefold_core::SymbolKind::Section));
+    assert_eq!(r.symbols[0].kind.as_str(), "section");
+}
